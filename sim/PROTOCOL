@@ -11,9 +11,9 @@ add -- adds a new body to the simulation
 // body_id
 // rotation -- radians
 
-face -- rotates a body to face x,y
- body_id
- position: { x: <>, y: <> }
+//face -- rotates a body to face x,y
+// body_id
+// position: { x: <>, y: <> }
 
 push -- applies force to a body in simulation by its id
  direction: { x: <>, y: <> }
@@ -27,7 +27,6 @@ SIM will answer requests:
 detail
  body_id
  request_id
- get: ['position','rotation']
 =>
 detail_response
  body_id

@@ -37,7 +37,7 @@ function Sim(engine, world) {
     var body = Bodies.rectangle(position.x, position.y, width, width, { isStatic: static })
 
     World.add(world, [body]);
-    this.trackBody(body);
+    return this.trackBody(body);
   };
 
   this.push = function(opts) {
@@ -47,6 +47,14 @@ function Sim(engine, world) {
         position  = force;
     Body.applyForce(body, force, force);
     return true
+  };
+
+  this.detail = function(opts) {
+    var body = this.findBody(opts.body_uuid);
+    return {
+      position: { x: body.position.x, y: body.position.y },
+      rotation: body.angle
+    };
   };
 
   this.findBody = function(body_uuid) {
@@ -69,15 +77,15 @@ function Commander(sim) {
   };
 
   this.add = function(opts) {
-    var methodName = `add${upcase(opts.shape)}`
+    var methodName = `add${upcase(opts.shape)}`;
     console.log("shape method:", methodName);
     var body_uuid = this.sim[methodName]({
       width:    opts.size,
       static:   false,
       position: { x: opts.position.x, y: opts.position.y },
     });
-    return this.detail(body_uuid);
-  }
+    return { body_uuid: body_uuid }
+  };
 
   this.push = function(opts) {
     this.sim.push({
@@ -85,12 +93,12 @@ function Commander(sim) {
       direction: opts.direction,
       force:     10
     })
-    return this.detail(body_uuid);
-  }
+    return { body_uuid: opts.body_uuid }
+  };
 
-  this.detail = function(body_uuid) {
-    return { body_uuid: body_uuid };
-  }
+  this.detail = function(opts) {
+    return this.sim.detail({ body_uuid: opts.body_uuid });
+  };
 };
 
 
@@ -112,9 +120,11 @@ var sim       = new Sim(engine, world),
 function handle(socket) {
   const rl = readline.createInterface({ input: socket });
   rl.on('line', function(line) {
-    console.log('got line', line);
-    var data = msgpack.parse(line);
-    commander[data.message](data);
+    var input_data = msgpack.parse(line);
+    console.log('got data', input_data);
+    var response_data = commander[input_data.message](input_data);
+    console.log('writing:', response_data);
+    socket.write(msgpack.pack(response_data));
   });
 };
 
@@ -129,8 +139,10 @@ server.on('err', function(err) {
   });
 });
 
-commander.add({
+d = commander.add({
   width:    10,
   position: { x: 10, y: 10 },
   shape:    'square'
 });
+console.log('detailing:', d)
+console.log('details:', commander.detail({ body_uuid: d.body_uuid }));
