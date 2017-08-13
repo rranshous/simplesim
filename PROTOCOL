@@ -1,0 +1,45 @@
+MessagePack?
+
+SIM will receive and update the simulation based on:
+
+add -- adds a new body to the simulation
+ shape -- 'rectangle' 'circle'
+ position -- starting position
+ size
+
+//rotate -- rotates a body in the simulation by its id
+// body_id
+// rotation -- radians
+
+face -- rotates a body to face x,y
+ body_id
+ position: { x: <>, y: <> }
+
+push -- applies force to a body in simulation by its id
+ direction: { x: <>, y: <> }
+ force
+
+tick -- progresses the simulation one step
+
+
+SIM will answer requests:
+
+detail
+ body_id
+ request_id
+ get: ['position','rotation']
+=>
+detail_response
+ body_id
+ request_id
+ details: {
+   position: { x: <>, y: <> },
+   rotation: <radians>
+ }
+
+SIM will broadcast:
+
+collision
+ bodies: [body_id, body_id]
+
+

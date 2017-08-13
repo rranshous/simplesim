@@ -1,0 +1,7 @@
+a simple 2d physics simulator
+
+uses (local) socket for communication
+
+does not draw, just does physics
+
+start simple, rectangles + circles which can collide
