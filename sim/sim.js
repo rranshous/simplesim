@@ -13,6 +13,7 @@ var port = 5000,
 var Engine = Matter.Engine,
     World  = Matter.World,
     Events = Matter.Events,
+    Vector = Matter.Vector,
     Bodies = Matter.Bodies,
     Body   = Matter.Body;
 
@@ -27,21 +28,23 @@ function Sim(engine, world) {
   this.rate   = 1000 / 60;
   this.bodies = {};
 
-  this.tick = function() { Engine.update(this.engine, 1000 / 60); };
+  this.tick = function() { Engine.update(this.engine, this.rate); };
 
   this.addSquare = function(opts) {
     var width    = opts.width,
         position = opts.position,
         static   = opts.static;
 
-    var body = Bodies.rectangle(position.x, position.y, width, width, { isStatic: static })
+    var body = Bodies.rectangle(
+      position.x, position.y, width, width, { isStatic: static }
+    )
 
     World.add(world, [body]);
     return this.trackBody(body);
   };
 
   this.push = function(opts) {
-    var body      = findBody(opts.body_uuid),
+    var body      = this.findBody(opts.body_uuid),
         direction = opts.direction,
         force     = Vector.create(direction),
         position  = force;
@@ -51,9 +54,11 @@ function Sim(engine, world) {
 
   this.detail = function(opts) {
     var body = this.findBody(opts.body_uuid);
+    console.log("BODY:", body);
     return {
       position: { x: body.position.x, y: body.position.y },
-      rotation: body.angle
+      rotation: body.angle,
+      body_uuid: body.uuid
     };
   };
 
@@ -63,8 +68,8 @@ function Sim(engine, world) {
 
   this.trackBody = function(body) {
     var body_uuid = uuid();
-    this.bodies[body_uuid] = body;
     body.uuid = body_uuid;
+    this.bodies[body_uuid] = body;
     return body_uuid;
   };
 };
@@ -74,6 +79,7 @@ function Commander(sim) {
 
   this.tick = function(opts) {
     this.sim.tick();
+    return { };
   };
 
   this.add = function(opts) {
@@ -84,7 +90,7 @@ function Commander(sim) {
       static:   false,
       position: { x: opts.position.x, y: opts.position.y },
     });
-    return { body_uuid: body_uuid }
+    return { body_uuid: body_uuid };
   };
 
   this.push = function(opts) {
@@ -93,7 +99,7 @@ function Commander(sim) {
       direction: opts.direction,
       force:     10
     })
-    return { body_uuid: opts.body_uuid }
+    return { body_uuid: opts.body_uuid };
   };
 
   this.detail = function(opts) {
@@ -120,11 +126,17 @@ var sim       = new Sim(engine, world),
 function handle(socket) {
   const rl = readline.createInterface({ input: socket });
   rl.on('line', function(line) {
-    var input_data = msgpack.parse(line);
-    console.log('got data', input_data);
-    var response_data = commander[input_data.message](input_data);
+    console.log('got line:', line);
+    var buf = Buffer.from(line, 'binary');
+    //var inputData = msgpack.unpack(buf);
+    var inputData = JSON.parse(line);
+    console.log('got data', inputData);
+    var response_data = commander[inputData.message](inputData);
+    response_data.request_id = inputData.request_id
     console.log('writing:', response_data);
-    socket.write(msgpack.pack(response_data));
+    // blocking write?
+    socket.write(JSON.stringify(response_data));
+    socket.write("\n");
   });
 };
 
@@ -138,11 +150,3 @@ server.on('err', function(err) {
     fs.unlink(SOCKET_PATH);
   });
 });
-
-d = commander.add({
-  width:    10,
-  position: { x: 10, y: 10 },
-  shape:    'square'
-});
-console.log('detailing:', d)
-console.log('details:', commander.detail({ body_uuid: d.body_uuid }));
