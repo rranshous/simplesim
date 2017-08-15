@@ -5,7 +5,7 @@ require 'msgpack'
 SOCKET_PATH = '/tmp/sim.sock'
 
 socket = UNIXSocket.new SOCKET_PATH
-body_uuid = nil
+body_uuid = ARGV.shift
 
 tick = lambda {
   puts "-tick"
@@ -27,8 +27,8 @@ add_square = lambda {
   to_send = {
     message: 'add',
     shape: 'square',
-    width: 10,
-    position: { x: 100, y: 100 },
+    size: 10,
+    position: { x: 10, y: 10 },
   };
   puts "writing: #{to_send}"
   socket.write(JSON.dump(to_send))
@@ -58,7 +58,7 @@ detail = lambda {
   puts "read: #{data}"
 }
 
-push = lambda {
+_push = lambda {
   puts "-push"
   # push the body
   to_send = {
@@ -76,14 +76,13 @@ push = lambda {
   puts "read: #{data}"
 }
 
-
-tick.call
-add_square.call
+if !body_uuid
+  add_square.call
+end
 detail.call
 tick.call
 detail.call
 tick.call
-push.call
 detail.call
 tick.call
 detail.call

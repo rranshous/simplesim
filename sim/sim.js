@@ -28,22 +28,30 @@ function Sim(engine, world) {
   this.rate   = 1000 / 60;
   this.bodies = {};
 
-  this.tick = function() { Engine.update(this.engine, this.rate); };
+  this.tick = function() {
+    console.log("sim tick");
+    Engine.update(this.engine, this.rate);
+    return true
+  };
 
   this.addSquare = function(opts) {
+    console.log("sim add square");
     var width    = opts.width,
         position = opts.position,
         static   = opts.static;
+
+    console.log("width:",width);
 
     var body = Bodies.rectangle(
       position.x, position.y, width, width, { isStatic: static }
     )
 
-    World.add(world, [body]);
+    World.add(this.world, [body]);
     return this.trackBody(body);
   };
 
   this.push = function(opts) {
+    console.log("sim push");
     var body      = this.findBody(opts.body_uuid),
         direction = opts.direction,
         force     = Vector.create(direction),
@@ -54,7 +62,7 @@ function Sim(engine, world) {
 
   this.detail = function(opts) {
     var body = this.findBody(opts.body_uuid);
-    console.log("BODY:", body);
+    console.log("sim detail:",body.position.x,body.position.y);
     return {
       position: { x: body.position.x, y: body.position.y },
       rotation: body.angle,
@@ -63,10 +71,12 @@ function Sim(engine, world) {
   };
 
   this.findBody = function(body_uuid) {
+    console.log("find body", body_uuid)
     return this.bodies[body_uuid];
   };
 
   this.trackBody = function(body) {
+    console.log("track body");
     var body_uuid = uuid();
     body.uuid = body_uuid;
     this.bodies[body_uuid] = body;
@@ -78,13 +88,14 @@ function Commander(sim) {
   this.sim = sim;
 
   this.tick = function(opts) {
+    console.log("commander tick", opts);
     this.sim.tick();
     return { };
   };
 
   this.add = function(opts) {
     var methodName = `add${upcase(opts.shape)}`;
-    console.log("shape method:", methodName);
+    console.log("shape method:", opts);
     var body_uuid = this.sim[methodName]({
       width:    opts.size,
       static:   false,
@@ -94,6 +105,7 @@ function Commander(sim) {
   };
 
   this.push = function(opts) {
+    console.log("commander push", opts);
     this.sim.push({
       body_uuid: opts.body_uuid,
       direction: opts.direction,
@@ -103,6 +115,7 @@ function Commander(sim) {
   };
 
   this.detail = function(opts) {
+    console.log("commander detail", opts);
     return this.sim.detail({ body_uuid: opts.body_uuid });
   };
 };
@@ -119,21 +132,29 @@ Events.on(world, 'collisionStart', function(event) {
   console.log('collion start', event.pairs);
 });
 
+Events.on(world, 'afterUpdate', function(event) {
+  console.log('afterUpdate', event);
+});
+
+Events.on(world, 'beforeUpdate', function(event) {
+  console.log('beforeUpdate', event);
+});
+
 
 var sim       = new Sim(engine, world),
     commander = new Commander(sim);
 
+function handleMessage(message) {
+  console.log('message', message);
+  return commander[message.message](message);
+};
+
 function handle(socket) {
-  const rl = readline.createInterface({ input: socket });
+  var rl = readline.createInterface({ input: socket });
   rl.on('line', function(line) {
-    console.log('got line:', line);
-    var buf = Buffer.from(line, 'binary');
-    //var inputData = msgpack.unpack(buf);
     var inputData = JSON.parse(line);
-    console.log('got data', inputData);
-    var response_data = commander[inputData.message](inputData);
+    var response_data = handleMessage(inputData);
     response_data.request_id = inputData.request_id
-    console.log('writing:', response_data);
     // blocking write?
     socket.write(JSON.stringify(response_data));
     socket.write("\n");
@@ -150,3 +171,7 @@ server.on('err', function(err) {
     fs.unlink(SOCKET_PATH);
   });
 });
+
+//setInterval(function() {
+//  Engine.update(engine, 1000 / 60);
+//}, 1000 / 60);
