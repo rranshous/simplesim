@@ -1,6 +1,5 @@
 require 'socket'
 require 'json'
-require 'msgpack'
 
 class Client
 
