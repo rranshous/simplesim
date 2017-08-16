@@ -28,7 +28,7 @@ function Sim(engine, world) {
   this.bodies = {};
 
   this.tick = function(opts) {
-    console.log("sim tick");
+    console.log("sim tick:", opts.step_ms);
     Engine.update(this.engine, opts.step_ms);
     return true
   };
@@ -67,6 +67,22 @@ function Sim(engine, world) {
       rotation: body.angle,
       body_uuid: body.uuid
     };
+  };
+
+  this.setGravity = function(opts) {
+    console.log("set gravity:", opts.x, opts.y);
+    if(typeof opts.x !== "undefined") {
+      console.log("new x", opts.x)
+      this.world.gravity.x = opts.x
+    }
+    if(typeof opts.y !== "undefined") {
+      console.log("new y", opts.y)
+      this.world.gravity.y = opts.y
+    }
+    return {
+      x: this.world.gravity.x,
+      y: this.world.gravity.y
+    }
   };
 
   this.findBody = function(body_uuid) {
@@ -113,6 +129,10 @@ function Commander(sim) {
     return { body_uuid: opts.body_uuid };
   };
 
+  this.set_gravity = function(opts) {
+    return this.sim.setGravity({x: opts.x, y: opts.y});
+  };
+
   this.detail = function(opts) {
     console.log("commander detail", opts);
     return this.sim.detail({ body_uuid: opts.body_uuid });
@@ -129,14 +149,6 @@ Events.on(world, 'afterAdd', function(event) {
 
 Events.on(world, 'collisionStart', function(event) {
   console.log('collion start', event.pairs);
-});
-
-Events.on(world, 'afterUpdate', function(event) {
-  console.log('afterUpdate', event);
-});
-
-Events.on(world, 'beforeUpdate', function(event) {
-  console.log('beforeUpdate', event);
 });
 
 

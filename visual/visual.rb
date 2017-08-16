@@ -6,6 +6,8 @@ require_relative '../logic/client.rb'
 client = Client.new(socket_path: '/tmp/sim.sock')
 client.connect
 
+client.set_gravity 0, 0
+
 data = client.add_square OpenStruct.new(x: 10, y:10), 10
 body_uuid = data['body_uuid']
 
@@ -18,6 +20,7 @@ def to_lt x, y
   top  = (WINDOW_HEIGHT/2) + y
   [left, top]
 end
+
 
 Shoes.app(width: WINDOW_WIDTH, height: WINDOW_HEIGHT, title: 'test') do
   begin

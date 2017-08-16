@@ -38,6 +38,14 @@ class Client
     return send_data to_send
   end
 
+  def set_gravity x, y
+    to_send = {
+      message: 'set_gravity',
+      x: x, y: y
+    }
+    return send_data to_send
+  end
+
   def detail opts
     body_uuid = opts[:body_uuid]
     to_send = { message: 'detail', body_uuid: body_uuid }
