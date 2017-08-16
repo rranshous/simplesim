@@ -17,8 +17,8 @@ client.add_rectangle(
   client.add_square(OpenStruct.new(x: rand(-100..100), y: rand(-100..100)), 10)
 end
 
-body_uuids = client.list_bodies.map {|bd| bd['body_uuid']}
-puts "bodies: #{body_uuids.length}"
+#body_uuids = client.list_bodies.map {|bd| bd['body_uuid']}
+#puts "bodies: #{body_uuids.length}"
 
 FPS = 60
 WINDOW_WIDTH = 800
@@ -45,7 +45,7 @@ Shoes.app(width: WINDOW_WIDTH, height: WINDOW_HEIGHT, title: 'test') do
       x, y = to_xy(left, top)
       puts "ADDING SQUARE: #{x}:#{y}"
       client.add_square(OpenStruct.new(x: x, y: y), 10)
-      body_uuids = client.list_bodies.map {|bd| bd['body_uuid']}
+      #body_uuids = client.list_bodies.map {|bd| bd['body_uuid']}
     end
 
     animate(FPS) do
@@ -54,8 +54,9 @@ Shoes.app(width: WINDOW_WIDTH, height: WINDOW_HEIGHT, title: 'test') do
         diff_ms = (Time.now.to_f - last) * 1000
         client.tick diff_ms
         last = Time.now.to_f
-        body_uuids.each do |body_uuid|
-          details = client.detail({ body_uuid: body_uuid })
+        client.list_details.each do |details|
+        #body_uuids.each do |body_uuid|
+          #details = client.detail({ body_uuid: body_uuid })
           x, y = details['position']['x'], details['position']['y']
           width, height = details['width'], details['height']
           left, top = to_lt(x, y)

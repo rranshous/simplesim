@@ -62,6 +62,11 @@ class Client
     return send_data to_send
   end
 
+  def list_details
+    to_send = { message: 'list_details' }
+    return send_data to_send
+  end
+
   def push
     to_send = {
       message: 'push',

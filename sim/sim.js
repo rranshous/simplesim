@@ -169,8 +169,9 @@ function Commander(sim) {
   };
 
   this.list_details = function(opts) {
-    return this.list_bodies.map(function(body_details) {
-      return this.detail(body_details);
+    var obj = this;
+    return this.list_bodies().map(function(body_details) {
+      return obj.detail(body_details);
     });
   };
 
