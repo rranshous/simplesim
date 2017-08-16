@@ -24,17 +24,27 @@ class Client
       message: 'tick',
       step_ms: step_ms
     }
-    puts "ticking: #{step_ms}"
     send_data to_send
   end
 
-  def add_square position, size
+  def add_square position, size, opts={}
     to_send = {
       message: 'add',
       shape: 'square',
       size: size,
       position: { x: position.x, y: position.y },
-    };
+    }.merge(opts);
+    return send_data to_send
+  end
+
+  def add_rectangle position, width, height, opts={}
+    to_send = {
+      message: 'add',
+      shape: 'rectangle',
+      width: width,
+      height: height,
+      position: { x: position.x, y: position.y },
+    }.merge(opts)
     return send_data to_send
   end
 

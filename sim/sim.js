@@ -28,29 +28,46 @@ function Sim(engine, world) {
   this.bodies = {};
 
   this.tick = function(opts) {
-    console.log("sim tick:", opts.step_ms);
     Engine.update(this.engine, opts.step_ms);
     return true
   };
 
+  this.addRectangle = function(opts) {
+    var width    = opts.width,
+        height   = opts.height,
+        position = opts.position,
+        static   = opts.static;
+
+    var body = Bodies.rectangle(
+      position.x, position.y, width, height, { isStatic: static }
+    )
+
+    body.width = width;
+    body.height = height;
+    body.shape = 'rectangle';
+
+    World.add(this.world, [body]);
+    return this.trackBody(body);
+  };
+
   this.addSquare = function(opts) {
-    console.log("sim add square");
     var width    = opts.width,
         position = opts.position,
         static   = opts.static;
 
-    console.log("width:",width);
-
     var body = Bodies.rectangle(
       position.x, position.y, width, width, { isStatic: static }
     )
+
+    body.width = width;
+    body.height = width;
+    body.shape = 'square';
 
     World.add(this.world, [body]);
     return this.trackBody(body);
   };
 
   this.push = function(opts) {
-    console.log("sim push");
     var body      = this.findBody(opts.body_uuid),
         direction = opts.direction,
         force     = Vector.create(direction),
@@ -61,22 +78,22 @@ function Sim(engine, world) {
 
   this.detail = function(opts) {
     var body = this.findBody(opts.body_uuid);
-    console.log("sim detail:",body.position.x,body.position.y);
     return {
       position: { x: body.position.x, y: body.position.y },
       rotation: body.angle,
-      body_uuid: body.uuid
+      body_uuid: body.uuid,
+      width: body.width,
+      height: body.height,
+      shape: body.shape,
+      static: body.isStatic
     };
   };
 
   this.setGravity = function(opts) {
-    console.log("set gravity:", opts.x, opts.y);
     if(typeof opts.x !== "undefined") {
-      console.log("new x", opts.x)
       this.world.gravity.x = opts.x
     }
     if(typeof opts.y !== "undefined") {
-      console.log("new y", opts.y)
       this.world.gravity.y = opts.y
     }
     return {
@@ -86,18 +103,15 @@ function Sim(engine, world) {
   };
 
   this.findBody = function(body_uuid) {
-    console.log("find body", body_uuid)
     return this.bodies[body_uuid];
   };
 
   this.listBodies = function() {
     var bodies = Object.keys(this.bodies);
-    console.log("list bodies:", bodies);
     return bodies;
   };
 
   this.trackBody = function(body) {
-    console.log("track body");
     var body_uuid = uuid();
     body.uuid = body_uuid;
     this.bodies[body_uuid] = body;
@@ -109,24 +123,35 @@ function Commander(sim) {
   this.sim = sim;
 
   this.tick = function(opts) {
-    console.log("commander tick", opts);
     this.sim.tick(opts);
     return { };
   };
 
-  this.add = function(opts) {
-    var methodName = `add${upcase(opts.shape)}`;
-    console.log("shape method:", opts);
-    var body_uuid = this.sim[methodName]({
+  this.add_square = function(opts) {
+    var body_uuid = this.sim.addSquare({
       width:    opts.size,
-      static:   false,
+      static:   opts.static,
       position: { x: opts.position.x, y: opts.position.y },
     });
     return { body_uuid: body_uuid };
   };
 
+  this.add_rectangle = function(opts) {
+    var body_uuid = this.sim.addRectangle({
+      width:    opts.width,
+      height:   opts.height,
+      static:   opts.static,
+      position: { x: opts.position.x, y: opts.position.y },
+    });
+    return { body_uuid: body_uuid };
+  };
+
+  this.add = function(opts) {
+    opts.static = opts.static || false;
+    return this[`add_${opts.shape}`](opts);
+  };
+
   this.push = function(opts) {
-    console.log("commander push", opts);
     this.sim.push({
       body_uuid: opts.body_uuid,
       direction: opts.direction,
@@ -140,7 +165,6 @@ function Commander(sim) {
   };
 
   this.detail = function(opts) {
-    console.log("commander detail", opts);
     return this.sim.detail({ body_uuid: opts.body_uuid });
   };
 
@@ -148,7 +172,6 @@ function Commander(sim) {
     var bodies = this.sim.listBodies().map(function(uuid) {
       return { body_uuid: uuid }
     });
-    console.log("commander list bodies:", bodies);
     return { bodies: bodies }
   }
 };
@@ -170,7 +193,6 @@ var sim       = new Sim(engine, world),
     commander = new Commander(sim);
 
 function handleMessage(message) {
-  console.log('message', message);
   return commander[message.message](message);
 };
 
