@@ -103,12 +103,6 @@ function Sim(engine, world) {
     this.bodies[body_uuid] = body;
     return body_uuid;
   };
-
-  this.clear = function() {
-    console.log("clearing");
-    this.engine.clear;
-    this.world = this.engine.world;
-  };
 };
 
 function Commander(sim) {
@@ -148,11 +142,6 @@ function Commander(sim) {
   this.detail = function(opts) {
     console.log("commander detail", opts);
     return this.sim.detail({ body_uuid: opts.body_uuid });
-  };
-
-  this.clear = function(opts) {
-    this.sim.clear();
-    return {}
   };
 
   this.list_bodies = function(opts) {

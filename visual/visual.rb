@@ -6,21 +6,20 @@ require_relative '../logic/client.rb'
 client = Client.new(socket_path: '/tmp/sim.sock')
 client.connect
 
-client.clear
-client.set_gravity 0, 0
+client.set_gravity(0, -0.1)
 
 client.add_square OpenStruct.new(x: 10, y:10), 10
 
 body_uuids = client.list_bodies['bodies'].map {|bd| bd['body_uuid']}
 puts "bodies: #{body_uuids.length}"
 
-FPS = 10
+FPS = 60
 WINDOW_WIDTH = 800
 WINDOW_HEIGHT = 800
 
 def to_lt x, y
-  left = (WINDOW_WIDTH/2) + x
-  top  = (WINDOW_HEIGHT/2) + y
+  top = (WINDOW_WIDTH/2) + x
+  left  = (WINDOW_HEIGHT/2) + y
   [left, top]
 end
 
@@ -30,7 +29,6 @@ Shoes.app(width: WINDOW_WIDTH, height: WINDOW_HEIGHT, title: 'test') do
     last = Time.now.to_f
     animate(FPS) do
       begin
-        puts "clearing"
         clear
         puts "ticking"
         diff_ms = (Time.now.to_f - last) * 1000
