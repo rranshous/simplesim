@@ -60,4 +60,14 @@ class Client
     }
     return send_data to_send
   end
+
+  def list_bodies
+    to_send = { message: 'list_bodies' }
+    return send_data to_send
+  end
+
+  def clear
+    to_send = { message: 'clear' }
+    return send_data to_send
+  end
 end

@@ -90,12 +90,24 @@ function Sim(engine, world) {
     return this.bodies[body_uuid];
   };
 
+  this.listBodies = function() {
+    var bodies = Object.keys(this.bodies);
+    console.log("list bodies:", bodies);
+    return bodies;
+  };
+
   this.trackBody = function(body) {
     console.log("track body");
     var body_uuid = uuid();
     body.uuid = body_uuid;
     this.bodies[body_uuid] = body;
     return body_uuid;
+  };
+
+  this.clear = function() {
+    console.log("clearing");
+    this.engine.clear;
+    this.world = this.engine.world;
   };
 };
 
@@ -137,6 +149,19 @@ function Commander(sim) {
     console.log("commander detail", opts);
     return this.sim.detail({ body_uuid: opts.body_uuid });
   };
+
+  this.clear = function(opts) {
+    this.sim.clear();
+    return {}
+  };
+
+  this.list_bodies = function(opts) {
+    var bodies = this.sim.listBodies().map(function(uuid) {
+      return { body_uuid: uuid }
+    });
+    console.log("commander list bodies:", bodies);
+    return { bodies: bodies }
+  }
 };
 
 

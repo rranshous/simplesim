@@ -6,10 +6,13 @@ require_relative '../logic/client.rb'
 client = Client.new(socket_path: '/tmp/sim.sock')
 client.connect
 
+client.clear
 client.set_gravity 0, 0
 
-data = client.add_square OpenStruct.new(x: 10, y:10), 10
-body_uuid = data['body_uuid']
+client.add_square OpenStruct.new(x: 10, y:10), 10
+
+body_uuids = client.list_bodies['bodies'].map {|bd| bd['body_uuid']}
+puts "bodies: #{body_uuids.length}"
 
 FPS = 10
 WINDOW_WIDTH = 800
@@ -34,14 +37,14 @@ Shoes.app(width: WINDOW_WIDTH, height: WINDOW_HEIGHT, title: 'test') do
         client.tick diff_ms
         last = Time.now.to_f
         puts "getting details"
-        details = client.detail({ body_uuid: body_uuid })
-        puts "details: #{details}"
-        x, y = details['position']['x'], details['position']['y']
-        left, top = to_lt(x, y)
-        width, height = [10, 10]
-        puts "drawing"
-        rect top, left, width, height
-        puts "done drawing"
+        body_uuids.each do |body_uuid|
+          details = client.detail({ body_uuid: body_uuid })
+          puts "details: #{details}"
+          x, y = details['position']['x'], details['position']['y']
+          left, top = to_lt(x, y)
+          width, height = [10, 10]
+          rect top, left, width, height
+        end
       rescue => ex
         puts "EX: #{ex}"
         raise
