@@ -19,8 +19,12 @@ class Client
     return JSON.parse(socket.gets())
   end
 
-  def tick
-    to_send = { message: 'tick' }
+  def tick step_ms=1000/30
+    to_send = {
+      message: 'tick',
+      step_ms: step_ms
+    }
+    puts "ticking: #{step_ms}"
     send_data to_send
   end
 

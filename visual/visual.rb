@@ -21,12 +21,15 @@ end
 
 Shoes.app(width: WINDOW_WIDTH, height: WINDOW_HEIGHT, title: 'test') do
   begin
+    last = Time.now.to_f
     animate(FPS) do
       begin
         puts "clearing"
         clear
         puts "ticking"
-        client.tick
+        diff_ms = (Time.now.to_f - last) * 1000
+        client.tick diff_ms
+        last = Time.now.to_f
         puts "getting details"
         details = client.detail({ body_uuid: body_uuid })
         puts "details: #{details}"

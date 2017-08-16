@@ -25,12 +25,11 @@ var upcase = function(string) {
 function Sim(engine, world) {
   this.engine = engine;
   this.world  = world;
-  this.rate   = 1000 / 60;
   this.bodies = {};
 
-  this.tick = function() {
+  this.tick = function(opts) {
     console.log("sim tick");
-    Engine.update(this.engine, this.rate);
+    Engine.update(this.engine, opts.step_ms);
     return true
   };
 
@@ -89,7 +88,7 @@ function Commander(sim) {
 
   this.tick = function(opts) {
     console.log("commander tick", opts);
-    this.sim.tick();
+    this.sim.tick(opts);
     return { };
   };
 
