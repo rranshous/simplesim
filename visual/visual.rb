@@ -1,3 +1,4 @@
+require 'shoes'
 require 'json'
 
 require_relative '../logic/client.rb'
@@ -18,8 +19,8 @@ def to_lt x, y
   [left, top]
 end
 
-Shoes.app(width: WINDOW_WIDTH, height: WINDOW_HEIGHT) do
-  stack do
+Shoes.app(width: WINDOW_WIDTH, height: WINDOW_HEIGHT, title: 'test') do
+  begin
     animate(FPS) do
       begin
         puts "clearing"
@@ -37,7 +38,11 @@ Shoes.app(width: WINDOW_WIDTH, height: WINDOW_HEIGHT) do
         puts "done drawing"
       rescue => ex
         puts "EX: #{ex}"
+        raise
       end
     end
+  rescue => ex
+    puts "OEX: #{ex}"
+    raise
   end
 end
