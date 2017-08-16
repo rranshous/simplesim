@@ -168,11 +168,16 @@ function Commander(sim) {
     return this.sim.detail({ body_uuid: opts.body_uuid });
   };
 
+  this.list_details = function(opts) {
+    return this.list_bodies.map(function(body_details) {
+      return this.detail(body_details);
+    });
+  };
+
   this.list_bodies = function(opts) {
-    var bodies = this.sim.listBodies().map(function(uuid) {
+    return this.sim.listBodies().map(function(uuid) {
       return { body_uuid: uuid }
     });
-    return { bodies: bodies }
   }
 };
 
@@ -181,7 +186,7 @@ var engine = Engine.create(),
     world  = engine.world;
 
 Events.on(world, 'afterAdd', function(event) {
-  console.log('added to world:', event.object);
+  //console.log('added to world:', event.object);
 });
 
 Events.on(world, 'collisionStart', function(event) {

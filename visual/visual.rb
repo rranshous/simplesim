@@ -17,7 +17,7 @@ client.add_rectangle(
   client.add_square(OpenStruct.new(x: rand(-100..100), y: rand(-100..100)), 10)
 end
 
-body_uuids = client.list_bodies['bodies'].map {|bd| bd['body_uuid']}
+body_uuids = client.list_bodies.map {|bd| bd['body_uuid']}
 puts "bodies: #{body_uuids.length}"
 
 FPS = 60
@@ -40,12 +40,14 @@ end
 Shoes.app(width: WINDOW_WIDTH, height: WINDOW_HEIGHT, title: 'test') do
   begin
     last = Time.now.to_f
+
     click do |_button, left, top|
       x, y = to_xy(left, top)
       puts "ADDING SQUARE: #{x}:#{y}"
       client.add_square(OpenStruct.new(x: x, y: y), 10)
-      body_uuids = client.list_bodies['bodies'].map {|bd| bd['body_uuid']}
+      body_uuids = client.list_bodies.map {|bd| bd['body_uuid']}
     end
+
     animate(FPS) do
       begin
         clear
