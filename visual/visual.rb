@@ -95,11 +95,6 @@ Thread.new do
   end
 end
 
-#controller.add_rectangle(JSON.load(JSON.dump({
-#  position: { x: 100, y: 100 },
-#  width: 10, height: 10
-#})))
-
 Shoes.app(width: WINDOW_WIDTH, height: WINDOW_HEIGHT, title: 'test') do
   begin
 

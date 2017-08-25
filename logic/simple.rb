@@ -20,7 +20,7 @@ vis_client.add_rectangle(
   800, 10,
   { static: true, body_uuid: r['body_uuid'] }
 )
-100.times do
+500.times do
   r = sim_client.add_rectangle(
     OpenStruct.new(x: rand(-100..100), y: rand(-100..100)), 10, 10
   )
@@ -35,9 +35,22 @@ last = Time.now.to_f
 loop do
   diff_ms = (Time.now.to_f - last) * 1000
   last = Time.now.to_f
-  sim_client.list_details.each do |details|
+  puts
+  puts "loop:   #{diff_ms}"
+  s = Time.now.to_f
+  all_details = sim_client.list_details
+  puts "detail: #{(Time.now.to_f - s) * 1000}"
+  pos_updates = []
+  s = Time.now.to_f
+  all_details.each do |details|
     x, y = details['position']['x'], details['position']['y']
-    vis_client.set_position details['body_uuid'], OpenStruct.new(x: x, y: y)
+    pos_updates << [ details['body_uuid'], OpenStruct.new(x: x, y: y) ]
   end
+  pos_updates.each do |update|
+    vis_client.set_position(*update)
+  end
+  puts "set pos: #{(Time.now.to_f - s) * 1000}"
+  s = Time.now.to_f
   sim_client.tick diff_ms
+  puts "tick:   #{(Time.now.to_f - s) * 1000}"
 end
