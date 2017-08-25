@@ -41,23 +41,31 @@ loop do
   puts "loop:   #{diff_ms}"
   s = Time.now.to_f
   all_details = sim_client.list_details
-  #puts "detail: #{(Time.now.to_f - s) * 1000}"
   pos_updates = []
   s = Time.now.to_f
   all_details.each do |details|
     x, y = details['position']['x'], details['position']['y']
     pos_updates << [ details['body_uuid'], OpenStruct.new(x: x, y: y) ]
   end
-  #puts "mapbch: #{(Time.now.to_f - s) * 1000}"
   pos_updates.each do |update|
     vis_client.set_position(*update)
   end
-  #puts "crtbch: #{(Time.now.to_f - s) * 1000}"
-  #s2 = Time.now.to_f
-  vis_client.send_batch
-  #puts "sndbch: #{(Time.now.to_f - s2) * 1000}"
-  #puts "setpos: #{(Time.now.to_f - s) * 1000}"
-  s = Time.now.to_f
-  sim_client.tick [diff_ms, MAX_TICK_MS].min
+  step_ms = [diff_ms, MAX_TICK_MS].min
+  sim_client.tick step_ms
+  vis_client.tick step_ms
+  r = vis_client.send_batch
+  vis_updates = r.last
+  clicks = vis_updates['clicks']
+  clicks.each do |pos|
+    r = sim_client.add_rectangle(
+      OpenStruct.new(x: pos['x'], y: pos['y']),
+      10, 10
+    )
+    vis_client.add_rectangle(
+      OpenStruct.new(x: pos['x'], y: pos['y']),
+      10, 10,
+      { body_uuid: r['body_uuid'] }
+    )
+  end
   #puts "tick:   #{(Time.now.to_f - s) * 1000}"
 end

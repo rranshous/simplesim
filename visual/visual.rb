@@ -32,12 +32,12 @@ class BodyCollection
 end
 
 class Controller
-  attr_accessor :bodies
+  attr_accessor :bodies, :clicks
 
   def add opts
     case opts['shape']
     when 'rectangle'
-      l, t = to_lt opts['position']['x'], opts['position']['y']
+      l, t = self.class.to_lt opts['position']['x'], opts['position']['y']
       body_uuid = opts['body_uuid'] || SecureRandom.uuid.to_s
       body = OpenStruct.new(body_uuid: body_uuid, shape: :rectangle,
                             left: l, top: t,
@@ -49,30 +49,38 @@ class Controller
 
   def set_position opts
     body = bodies.get opts['body_uuid']
-    l, t = to_lt opts['position']['x'], opts['position']['y']
+    l, t = self.class.to_lt opts['position']['x'], opts['position']['y']
     body.left = l
     body.top = t
     return { body_uuid: body.body_uuid }
   end
 
+  def tick *_
+    prev_clicks = self.clicks.dup
+    self.clicks.clear
+    return { clicks: prev_clicks }
+  end
+
   private
 
-  def to_lt x, y
+  def self.to_lt x, y
     top = (WINDOW_WIDTH/2) - y
     left  = (WINDOW_HEIGHT/2) + x
     [left, top]
   end
 
-  def to_xy l, t
+  def self.to_xy l, t
     x = l - (WINDOW_HEIGHT/2)
     y = -(t - (WINDOW_HEIGHT/2))
     [x, y]
   end
 end
 
+clicks = []
 bodies = BodyCollection.new
 controller = Controller.new
 controller.bodies = bodies
+controller.clicks = clicks
 
 File.unlink SOCKET_PATH rescue false
 Thread.new do
@@ -105,8 +113,12 @@ Shoes.app(width: WINDOW_WIDTH, height: WINDOW_HEIGHT, title: 'test') do
   begin
 
     click do |_button, left, top|
-      x, y = to_xy(left, top)
-      client.add_square(OpenStruct.new(x: x, y: y), 10)
+      begin
+        x, y = Controller.to_xy(left, top)
+        clicks << { x: x, y: y }
+      rescue => ex
+        puts "CEX: #{ex}"
+      end
     end
 
     animate(FPS) do
@@ -130,6 +142,7 @@ Shoes.app(width: WINDOW_WIDTH, height: WINDOW_HEIGHT, title: 'test') do
         raise
       end
     end
+
   rescue => ex
     puts "OEX: #{ex}"
     puts " : #{ex.backtrace}"
