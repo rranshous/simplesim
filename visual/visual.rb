@@ -17,18 +17,17 @@ class BodyCollection
 
   def add body
     uuid = body['body_uuid']
-    @lock.synchronize { @bodies[uuid] = body }
+    @bodies[uuid] = body
   end
 
   def each &blk
-    bodies = @lock.synchronize { @bodies.dup }
-    bodies.values.each do |body|
-      @lock.synchronize { blk.call body }
+    @bodies.values.each do |body|
+      blk.call body
     end
   end
 
   def get body_uuid
-    @lock.synchronize { @bodies[body_uuid] }
+    @bodies[body_uuid]
   end
 end
 
@@ -84,8 +83,15 @@ Thread.new do
         s = serv.accept
         loop do
           data = JSON.load(s.gets)
-          r = controller.send data['message'], data
-          s.puts JSON.dump(r)
+          if data['messages']
+            r = data['messages'].map do |message_data|
+              controller.send message_data['message'], message_data
+            end
+            s.puts JSON.dump(r)
+          else
+            r = controller.send data['message'], data
+            s.puts JSON.dump(r)
+          end
         end
       end
     rescue => ex

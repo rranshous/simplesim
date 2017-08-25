@@ -90,3 +90,23 @@ class Client
     return send_data to_send
   end
 end
+
+module Batcher
+  def send_data data
+    (@pending ||= []) << data
+  end
+
+  def send_batch
+    return if @pending.nil? || @pending.empty?
+    to_send = { messages: @pending }
+    r = send_data_orig to_send
+    @pending.clear
+    return r
+  end
+
+  def send_data_orig to_send
+    self.socket.write(JSON.dump(to_send))
+    self.socket.write("\n")
+    return JSON.parse(self.socket.gets())
+  end
+end

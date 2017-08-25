@@ -1,11 +1,13 @@
 require_relative 'client'
 
 FPS = 60
+MAX_TICK_MS = 30
 
 sim_client = Client.new(socket_path: '/tmp/sim.sock')
 sim_client.connect
 
 vis_client = Client.new(socket_path: '/tmp/vis.sock')
+vis_client.extend(Batcher)
 vis_client.connect
 
 sim_client.set_gravity(0, 0.1)
@@ -35,22 +37,27 @@ last = Time.now.to_f
 loop do
   diff_ms = (Time.now.to_f - last) * 1000
   last = Time.now.to_f
-  puts
+  #puts
   puts "loop:   #{diff_ms}"
   s = Time.now.to_f
   all_details = sim_client.list_details
-  puts "detail: #{(Time.now.to_f - s) * 1000}"
+  #puts "detail: #{(Time.now.to_f - s) * 1000}"
   pos_updates = []
   s = Time.now.to_f
   all_details.each do |details|
     x, y = details['position']['x'], details['position']['y']
     pos_updates << [ details['body_uuid'], OpenStruct.new(x: x, y: y) ]
   end
+  #puts "mapbch: #{(Time.now.to_f - s) * 1000}"
   pos_updates.each do |update|
     vis_client.set_position(*update)
   end
-  puts "set pos: #{(Time.now.to_f - s) * 1000}"
+  #puts "crtbch: #{(Time.now.to_f - s) * 1000}"
+  #s2 = Time.now.to_f
+  vis_client.send_batch
+  #puts "sndbch: #{(Time.now.to_f - s2) * 1000}"
+  #puts "setpos: #{(Time.now.to_f - s) * 1000}"
   s = Time.now.to_f
-  sim_client.tick diff_ms
-  puts "tick:   #{(Time.now.to_f - s) * 1000}"
+  sim_client.tick [diff_ms, MAX_TICK_MS].min
+  #puts "tick:   #{(Time.now.to_f - s) * 1000}"
 end
