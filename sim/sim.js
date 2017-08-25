@@ -214,6 +214,7 @@ function handle(socket) {
   });
 };
 
+fs.unlinkSync(SOCKET_PATH);
 var server = net.createServer(handle);
 server.listen(unixsocket);
 
@@ -224,6 +225,8 @@ server.on('err', function(err) {
     fs.unlink(SOCKET_PATH);
   });
 });
+
+console.log("starting");
 
 //setInterval(function() {
 //  Engine.update(engine, 1000 / 60);
