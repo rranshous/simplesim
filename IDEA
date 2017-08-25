@@ -1,0 +1,24 @@
+
+simple 2d simulator and visualizer
+
+tie them together with a simple game logic example
+
+each is a seperate component and they talk via local sockets
+
+
+simulator process
+
+game logic processor
+
+visualizer processor
+
+
+/tmp/sim.sock
+/tmp/visualizer.sock
+
+game logic processes talks to sim and visualizer
+it acts as the driver for both
+
+
+simulator has location data for all bodies
+          and events on collisions (coming soon)

@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+node sim/sim.js &
+shoes visual/visual.rb &
+sleep 1
+ruby logic/simple.rb

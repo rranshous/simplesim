@@ -80,4 +80,13 @@ class Client
     to_send = { message: 'list_bodies' }
     return send_data to_send
   end
+
+  def set_position body_uuid, position
+    to_send = {
+      message: 'set_position',
+      body_uuid: body_uuid,
+      position: { x: position.x, y: position.y }
+    }
+    return send_data to_send
+  end
 end

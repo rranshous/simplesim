@@ -1,74 +1,126 @@
 require 'shoes'
 require 'json'
-
-require_relative '../logic/client.rb'
-
-client = Client.new(socket_path: '/tmp/sim.sock')
-client.connect
-
-client.set_gravity(0, 0.1)
-
-client.add_rectangle(
-  OpenStruct.new(x: 0, y: 300),
-  800, 10,
-  { static: true }
-)
-100.times do
-  client.add_square(OpenStruct.new(x: rand(-100..100), y: rand(-100..100)), 10)
-end
+require 'thread'
+require 'socket'
+require 'securerandom'
 
 FPS = 60
 WINDOW_WIDTH = 800
 WINDOW_HEIGHT = 800
+SOCKET_PATH = "/tmp/vis.sock"
 
-def to_lt x, y
-  top = (WINDOW_WIDTH/2) - y
-  left  = (WINDOW_HEIGHT/2) + x
-  [left, top]
+class BodyCollection
+  def initialize
+    @bodies = {}
+    @lock = Mutex.new
+  end
+
+  def add body
+    uuid = body['body_uuid']
+    @lock.synchronize { @bodies[uuid] = body }
+  end
+
+  def each &blk
+    bodies = @lock.synchronize { @bodies.dup }
+    bodies.values.each do |body|
+      @lock.synchronize { blk.call body }
+    end
+  end
+
+  def get body_uuid
+    @lock.synchronize { @bodies[body_uuid] }
+  end
 end
 
-def to_xy l, t
-  x = l - (WINDOW_HEIGHT/2)
-  y = -(t - (WINDOW_HEIGHT/2))
-  [x, y]
+class Controller
+  attr_accessor :bodies
+
+  def add opts
+    case opts['shape']
+    when 'rectangle'
+      l, t = to_lt opts['position']['x'], opts['position']['y']
+      body_uuid = opts['body_uuid'] || SecureRandom.uuid.to_s
+      body = OpenStruct.new(body_uuid: body_uuid, shape: :rectangle,
+                            left: l, top: t,
+                            width: opts['width'], height: opts['height'])
+      bodies.add body
+      return { body_uuid: body_uuid }
+    end
+  end
+
+  def set_position opts
+    body = bodies.get opts['body_uuid']
+    l, t = to_lt opts['position']['x'], opts['position']['y']
+    body.left = l
+    body.top = t
+    return { body_uuid: body.body_uuid }
+  end
+
+  private
+
+  def to_lt x, y
+    top = (WINDOW_WIDTH/2) - y
+    left  = (WINDOW_HEIGHT/2) + x
+    [left, top]
+  end
+
+  def to_xy l, t
+    x = l - (WINDOW_HEIGHT/2)
+    y = -(t - (WINDOW_HEIGHT/2))
+    [x, y]
+  end
 end
 
+bodies = BodyCollection.new
+controller = Controller.new
+controller.bodies = bodies
+
+File.unlink SOCKET_PATH rescue false
+Thread.new do
+  loop do
+    begin
+      puts "listening"
+      UNIXServer.open(SOCKET_PATH) do |serv|
+        s = serv.accept
+        loop do
+          data = JSON.load(s.gets)
+          r = controller.send data['message'], data
+          s.puts JSON.dump(r)
+        end
+      end
+    rescue => ex
+      puts "TEX: #{ex}"
+      puts " : #{ex.traceback}"
+    end
+  end
+end
+
+#controller.add_rectangle(JSON.load(JSON.dump({
+#  position: { x: 100, y: 100 },
+#  width: 10, height: 10
+#})))
 
 Shoes.app(width: WINDOW_WIDTH, height: WINDOW_HEIGHT, title: 'test') do
   begin
-    last = Time.now.to_f
 
     click do |_button, left, top|
       x, y = to_xy(left, top)
       client.add_square(OpenStruct.new(x: x, y: y), 10)
     end
 
-    every(1) do
-      puts "details"
-      puts client.list_details
-      puts
-    end
-
     animate(FPS) do
       begin
         clear
-        diff_ms = (Time.now.to_f - last) * 1000
-        client.tick diff_ms
-        last = Time.now.to_f
         image(WINDOW_WIDTH, WINDOW_HEIGHT) do
-          client.list_details.each do |details|
-            x, y = details['position']['x'], details['position']['y']
-            width, height = details['width'], details['height']
-            left, top = to_lt(x, y)
-            rot = details['rotation'] * 180 / Math::PI
-            puts "rot: #{rot}"
-            rotate(rot)
-            rect({
-              top: top, left: left,
-              width: width, height: height,
-              center: true
-            })
-            rotate(-rot)
+          bodies.each do |body|
+            case body.shape
+            when :rectangle
+              rect({
+                top: body.top, left: body.left,
+                width: body.width, height: body.height,
+                center: true
+              })
+            end
           end
         end
       rescue => ex
