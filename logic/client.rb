@@ -89,6 +89,15 @@ class Client
     }
     return send_data to_send
   end
+
+  def set_color body_uuid, color
+    to_send = {
+      message: 'set_color',
+      body_uuid: body_uuid,
+      color: color
+    }
+    return send_data to_send
+  end
 end
 
 module Batcher

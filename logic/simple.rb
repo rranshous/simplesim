@@ -38,7 +38,7 @@ loop do
   diff_ms = (Time.now.to_f - last) * 1000
   last = Time.now.to_f
   #puts
-  puts "loop:   #{diff_ms}"
+  #puts "loop:   #{diff_ms}"
   s = Time.now.to_f
   all_details = sim_client.list_details
   pos_updates = []

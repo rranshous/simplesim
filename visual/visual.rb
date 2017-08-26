@@ -39,7 +39,8 @@ class Controller
     when 'rectangle'
       l, t = self.class.to_lt opts['position']['x'], opts['position']['y']
       body_uuid = opts['body_uuid'] || SecureRandom.uuid.to_s
-      body = OpenStruct.new(body_uuid: body_uuid, shape: :rectangle,
+      body = OpenStruct.new(body_uuid: body_uuid,
+                            shape: :rectangle, color: :black,
                             left: l, top: t,
                             width: opts['width'], height: opts['height'])
       bodies.add body
@@ -52,6 +53,12 @@ class Controller
     l, t = self.class.to_lt opts['position']['x'], opts['position']['y']
     body.left = l
     body.top = t
+    return { body_uuid: body.body_uuid }
+  end
+
+  def set_color opts
+    body = bodies.get opts['body_uuid']
+    body.color = opts['color']
     return { body_uuid: body.body_uuid }
   end
 
@@ -128,6 +135,7 @@ Shoes.app(width: WINDOW_WIDTH, height: WINDOW_HEIGHT, title: 'test') do
           bodies.each do |body|
             case body.shape
             when :rectangle
+              fill self.send(body.color)
               rect({
                 top: body.top, left: body.left,
                 width: body.width, height: body.height,
