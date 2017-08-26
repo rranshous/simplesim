@@ -23,11 +23,13 @@ var upcase = function(string) {
 
 
 function Sim(engine, world) {
-  this.engine = engine;
-  this.world  = world;
-  this.bodies = {};
+  this.engine     = engine;
+  this.world      = world;
+  this.bodies     = {};
+  this.collisions = [];
 
   this.tick = function(opts) {
+    this.collisions.length = 0;
     Engine.update(this.engine, opts.step_ms);
     return true
   };
@@ -117,14 +119,37 @@ function Sim(engine, world) {
     this.bodies[body_uuid] = body;
     return body_uuid;
   };
+
+  this.handleCollision = function(event) {
+    //this.collisions.push([ event.pairs.bodyA, event.pairs.bodyB ]);
+    var collisions = this.collisions;
+    event.pairs.forEach(function(pair) {
+      collisions.push([pair.bodyA, pair.bodyB]);
+    });
+    return true;
+  };
+
+  var dis = this;
+  Events.on(
+    engine,
+    'collisionStart',
+    function(event) {
+      dis.handleCollision(event);
+    }
+  );
 };
 
 function Commander(sim) {
   this.sim = sim;
 
   this.tick = function(opts) {
+    var collisions = this.sim.collisions.map(
+      function(pair) {
+        return { pair: pair.map(function(body) { return body.uuid }) };
+      }
+    );
     this.sim.tick(opts);
-    return { };
+    return { collisions: collisions };
   };
 
   this.add_square = function(opts) {
@@ -183,6 +208,8 @@ function Commander(sim) {
 };
 
 
+var collisions = [];
+
 var engine = Engine.create(),
     world  = engine.world;
 
@@ -190,9 +217,6 @@ Events.on(world, 'afterAdd', function(event) {
   //console.log('added to world:', event.object);
 });
 
-Events.on(world, 'collisionStart', function(event) {
-  console.log('collion start', event.pairs);
-});
 
 
 var sim       = new Sim(engine, world),

@@ -51,7 +51,10 @@ loop do
     vis_client.set_position(*update)
   end
   step_ms = [diff_ms, MAX_TICK_MS].min
-  sim_client.tick step_ms
+  r = sim_client.tick step_ms
+  r['collisions'].each do |collision|
+    puts "collision: #{collision['pair']}"
+  end
   vis_client.tick step_ms
   r = vis_client.send_batch
   vis_updates = r.last
