@@ -80,12 +80,21 @@ function Sim(engine, world) {
   };
 
   this.push = function(opts) {
+    // TODO: currently causes tick not to work
     var body      = this.findBody(opts.body_uuid),
         direction = opts.direction,
-        force     = Vector.create(direction),
-        position  = force;
-    Body.applyForce(body, force, force);
+        force     = Vector.create(direction.x, direction.y),
+        position  = Vector.create(0, 0);
+
+    Body.applyForce(body, position, force);
     return true
+  };
+
+  this.setVelocity = function(opts) {
+    var body      = this.findBody(opts.body_uuid),
+        velocity  = opts.velocity;
+    Body.setVelocity(body, { x: velocity.x, y: velocity.y });
+    return true;
   };
 
   this.detail = function(opts) {
@@ -200,9 +209,16 @@ function Commander(sim) {
   this.push = function(opts) {
     this.sim.push({
       body_uuid: opts.body_uuid,
-      direction: opts.direction,
-      force:     10
+      direction: opts.direction
     })
+    return { body_uuid: opts.body_uuid };
+  };
+
+  this.set_velocity = function(opts) {
+    this.sim.setVelocity({
+      body_uuid: opts.body_uuid,
+      velocity:   opts.velocity
+    });
     return { body_uuid: opts.body_uuid };
   };
 

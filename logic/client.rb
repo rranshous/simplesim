@@ -67,11 +67,11 @@ class Client
     return send_data to_send
   end
 
-  def push
+  def push body_uuid, x, y
     to_send = {
       message: 'push',
       body_uuid: body_uuid,
-      direction: { x: 1, y: 1 }
+      direction: { x: x, y: y }
     }
     return send_data to_send
   end
@@ -86,6 +86,15 @@ class Client
       message: 'set_position',
       body_uuid: body_uuid,
       position: { x: position.x, y: position.y }
+    }
+    return send_data to_send
+  end
+
+  def set_velocity body_uuid, x, y
+    to_send = {
+      message: 'set_velocity',
+      body_uuid: body_uuid,
+      velocity: { x: x, y: y }
     }
     return send_data to_send
   end

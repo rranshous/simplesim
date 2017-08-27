@@ -22,9 +22,7 @@ class BodyCollection
 
   def remove body
     return false if body.nil?
-    puts "bodiesBefore: #{@bodies.length}"
     @bodies.delete body.body_uuid
-    puts "bodiesAfter: #{@bodies.length}"
     return true
   end
 
@@ -58,14 +56,14 @@ class Controller
 
   def destroy opts
     body = bodies.get(opts['body_uuid'])
-    puts "removing: #{body}"
     bodies.remove body
     return { body_uuid: opts['body_uuid'] }
   end
 
   def set_position opts
     body = bodies.get opts['body_uuid']
-    l, t = self.class.to_lt opts['position']['x'], opts['position']['y']
+    x, y = opts['position']['x'], opts['position']['y']
+    l, t = self.class.to_lt x, y
     body.left = l
     body.top = t
     return { body_uuid: body.body_uuid }
@@ -104,10 +102,11 @@ controller = Controller.new
 controller.bodies = bodies
 controller.clicks = clicks
 
-File.unlink SOCKET_PATH rescue false
 Thread.new do
   loop do
     begin
+      puts "removing socket"
+      File.unlink SOCKET_PATH rescue false
       puts "listening"
       UNIXServer.open(SOCKET_PATH) do |serv|
         s = serv.accept
@@ -126,7 +125,7 @@ Thread.new do
       end
     rescue => ex
       puts "TEX: #{ex}"
-      puts " : #{ex.traceback}"
+      puts " : #{ex.backtrace}"
     end
   end
 end
