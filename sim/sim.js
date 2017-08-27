@@ -69,6 +69,16 @@ function Sim(engine, world) {
     return this.trackBody(body);
   };
 
+  this.destroy = function(opts) {
+    var body = this.findBody(opts.body_uuid);
+    if(body) {
+      Matter.World.remove(world, [body])
+      this.stopTrackingBody(body);
+      return true;
+    };
+    return false;
+  };
+
   this.push = function(opts) {
     var body      = this.findBody(opts.body_uuid),
         direction = opts.direction,
@@ -106,6 +116,10 @@ function Sim(engine, world) {
 
   this.findBody = function(body_uuid) {
     return this.bodies[body_uuid];
+  };
+
+  this.stopTrackingBody = function(body) {
+    delete this.bodies[body.uuid];
   };
 
   this.listBodies = function() {
@@ -150,6 +164,13 @@ function Commander(sim) {
     );
     this.sim.tick(opts);
     return { collisions: collisions };
+  };
+
+  this.destroy = function(opts) {
+    this.sim.destroy({
+      body_uuid: opts.body_uuid
+    });
+    return { body_uuid: opts.body_uuid };
   };
 
   this.add_square = function(opts) {

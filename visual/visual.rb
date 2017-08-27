@@ -20,6 +20,14 @@ class BodyCollection
     @bodies[uuid] = body
   end
 
+  def remove body
+    return false if body.nil?
+    puts "bodiesBefore: #{@bodies.length}"
+    @bodies.delete body.body_uuid
+    puts "bodiesAfter: #{@bodies.length}"
+    return true
+  end
+
   def each &blk
     @bodies.values.each do |body|
       blk.call body
@@ -46,6 +54,13 @@ class Controller
       bodies.add body
       return { body_uuid: body_uuid }
     end
+  end
+
+  def destroy opts
+    body = bodies.get(opts['body_uuid'])
+    puts "removing: #{body}"
+    bodies.remove body
+    return { body_uuid: opts['body_uuid'] }
   end
 
   def set_position opts

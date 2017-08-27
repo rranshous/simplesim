@@ -98,6 +98,14 @@ class Client
     }
     return send_data to_send
   end
+
+  def destroy body_uuid
+    to_send = {
+      message: 'destroy',
+      body_uuid: body_uuid
+    }
+    return send_data to_send
+  end
 end
 
 module Batcher
