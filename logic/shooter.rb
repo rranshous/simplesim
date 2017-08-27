@@ -73,6 +73,10 @@ loop do
       vis_client.destroy other
       sim_client.destroy destroyer
       vis_client.destroy destroyer
+      targets.delete other
+      targets.delete destroyer
+      destroyers.delete other
+      destroyers.delete destroyer
     end
   end
   vis_client.tick step_ms
@@ -95,5 +99,4 @@ loop do
   end
   #puts "tick:   #{(Time.now.to_f - s) * 1000}"
 end
-
 
