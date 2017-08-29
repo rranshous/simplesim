@@ -3,6 +3,7 @@ require 'json'
 require 'thread'
 require 'socket'
 require 'securerandom'
+require_relative 'keyboard'
 
 FPS = 60
 WINDOW_WIDTH = 800
@@ -38,7 +39,7 @@ class BodyCollection
 end
 
 class Controller
-  attr_accessor :bodies, :clicks
+  attr_accessor :bodies, :clicks, :keypresses
 
   def add opts
     case opts['shape']
@@ -78,7 +79,9 @@ class Controller
   def tick *_
     prev_clicks = self.clicks.dup
     self.clicks.clear
-    return { clicks: prev_clicks }
+    prev_keypresses = self.keypresses.dup
+    self.keypresses.clear
+    return { clicks: prev_clicks, keypresses: prev_keypresses }
   end
 
   private
@@ -97,10 +100,12 @@ class Controller
 end
 
 clicks = []
+keypresses = []
 bodies = BodyCollection.new
 controller = Controller.new
 controller.bodies = bodies
 controller.clicks = clicks
+controller.keypresses = keypresses
 
 Thread.new do
   loop do
@@ -133,6 +138,9 @@ end
 Shoes.app(width: WINDOW_WIDTH, height: WINDOW_HEIGHT, title: 'test') do
   begin
 
+    keyboard = Keyboard.new self
+    keyboard_interpreter = KeyboardInterpreter.new keyboard
+
     click do |_button, left, top|
       begin
         x, y = Controller.to_xy(left, top)
@@ -145,6 +153,9 @@ Shoes.app(width: WINDOW_WIDTH, height: WINDOW_HEIGHT, title: 'test') do
     animate(FPS) do
       begin
         clear
+        keyboard_interpreter.keypresses.each do |key|
+          keypresses << key
+        end
         image(WINDOW_WIDTH, WINDOW_HEIGHT) do
           bodies.each do |body|
             case body.shape

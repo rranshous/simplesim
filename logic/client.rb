@@ -99,6 +99,14 @@ class Client
     return send_data to_send
   end
 
+  def set_anti_gravity body_uuid
+    to_send = {
+      message: :set_anti_gravity,
+      body_uuid: body_uuid
+    }
+    return send_data to_send
+  end
+
   def set_color body_uuid, color
     to_send = {
       message: 'set_color',

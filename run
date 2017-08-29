@@ -3,4 +3,4 @@
 node sim/sim.js &
 shoes visual/visual.rb &
 sleep 1
-ruby logic/shooter.rb
+ruby logic/move_and_shoot.rb

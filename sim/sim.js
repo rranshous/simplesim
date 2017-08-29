@@ -3,7 +3,7 @@ const SOCKET_PATH = '/tmp/sim.sock';
 const net      = require('net'),
       readline = require('readline'),
       msgpack  = require('msgpack'),
-      Matter   = require('matter-js'),
+      Matter   = require('../../matter-js/'),
       uuid     = require('uuid/v1'),
       fs       = require('fs');
 
@@ -123,6 +123,14 @@ function Sim(engine, world) {
     }
   };
 
+  this.setAntiGravity = function(opts) {
+    var body = this.findBody(opts.body_uuid);
+    console.log("setting anti grav:", opts);
+    console.log("setting anti grav:", body.uuid);
+    body.antiGravity = true;
+    return true;
+  };
+
   this.findBody = function(body_uuid) {
     return this.bodies[body_uuid];
   };
@@ -224,6 +232,13 @@ function Commander(sim) {
 
   this.set_gravity = function(opts) {
     return this.sim.setGravity({x: opts.x, y: opts.y});
+  };
+
+  this.set_anti_gravity = function(opts) {
+    this.sim.setAntiGravity({
+      body_uuid: opts.body_uuid
+    });
+    return { body_uuid: opts.body_uuid }
   };
 
   this.detail = function(opts) {
