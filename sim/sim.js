@@ -35,14 +35,21 @@ function Sim(engine, world) {
   };
 
   this.addRectangle = function(opts) {
-    var width    = opts.width,
-        height   = opts.height,
-        position = opts.position,
-        static   = opts.static;
+    var width       = opts.width,
+        height      = opts.height,
+        density     = opts.density,
+        friction    = opts.friction,
+        restitution = opts.restitution,
+        position    = opts.position,
+        static      = opts.static;
+
+    console.log("density", density, "friction", friction, "restituion", restitution)
 
     var body = Bodies.rectangle(
-      position.x, position.y, width, height, { isStatic: static }
-    )
+      position.x, position.y, width, height,
+      { isStatic: static, density: density, friction: friction,
+        restitution: restitution }
+    );
 
     body.width = width;
     body.height = height;
@@ -83,9 +90,10 @@ function Sim(engine, world) {
     // TODO: currently causes tick not to work
     var body      = this.findBody(opts.body_uuid),
         direction = opts.direction,
-        force     = Vector.create(direction.x, direction.y),
+        force     = Vector.create(direction.x / 100, direction.y / 100),
         position  = Vector.create(0, 0);
 
+    console.log("force: ", force);
     Body.applyForce(body, position, force);
     return true
   };
@@ -125,8 +133,6 @@ function Sim(engine, world) {
 
   this.setAntiGravity = function(opts) {
     var body = this.findBody(opts.body_uuid);
-    console.log("setting anti grav:", opts);
-    console.log("setting anti grav:", body.uuid);
     body.antiGravity = true;
     return true;
   };
@@ -201,10 +207,14 @@ function Commander(sim) {
 
   this.add_rectangle = function(opts) {
     var body_uuid = this.sim.addRectangle({
-      width:    opts.width,
-      height:   opts.height,
-      static:   opts.static,
-      position: { x: opts.position.x, y: opts.position.y },
+      width:       opts.width,
+      height:      opts.height,
+      static:      opts.static,
+      density:     opts.density || 0.05,
+      friction:    opts.friction || 0.01,
+      restitution: opts.restitution || 0.01,
+      //frictionAir: 0.001,
+      position:    { x: opts.position.x, y: opts.position.y },
     });
     return { body_uuid: body_uuid };
   };

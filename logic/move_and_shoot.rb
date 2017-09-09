@@ -22,7 +22,7 @@ shooter_loc = Location.new(x: 0, y: -300)
 r = sim_client.add_rectangle(
   Location.new(x: 0, y: 300),
   800, 10,
-  { static: true }
+  { static: true, density: 1, friction: 0.10 }
 )
 vis_client.add_rectangle(
   Location.new(x: 0, y: 300),
@@ -33,7 +33,8 @@ perminants << r['body_uuid']
 
 add_random_target = lambda {
   r = sim_client.add_rectangle(
-    Location.new(x: rand(-100..100), y: rand(-100..100)), 10, 10
+    Location.new(x: rand(-100..100), y: rand(-100..100)), 10, 10,
+    { density: 0.1, friction: 0.01 }
   )
   vis_client.add_rectangle(
     Location.new(x: rand(-100..100), y: rand(-100..100)), 10, 10,
@@ -44,7 +45,8 @@ add_random_target = lambda {
 
 r = sim_client.add_rectangle(
   shooter_loc,
-  15, 15
+  15, 15,
+  { density: 0.8, friction: 0.01 }
 )
 shooter_body_uuid = r['body_uuid']
 vis_client.add_rectangle(
@@ -52,7 +54,7 @@ vis_client.add_rectangle(
   15, 15,
   { body_uuid: shooter_body_uuid }
 )
-sim_client.set_anti_gravity shooter_body_uuid
+#sim_client.set_anti_gravity shooter_body_uuid
 
 vis_client.set_color(shooter_body_uuid, :red)
 perminants << shooter_body_uuid
@@ -107,7 +109,8 @@ loop do
   clicks.each do |pos|
     bullet_loc = shooter_loc + Location.new(y: 20)
     r = sim_client.add_rectangle(
-      bullet_loc, 3, 3
+      bullet_loc, 3, 3,
+      { density: 0.8, friction: 0.01 }
     )
     vis_client.add_rectangle(
       bullet_loc, 3, 3,
@@ -124,9 +127,13 @@ loop do
   keypresses.each do |key|
     case key
     when "w"
+      sim_client.push shooter_body_uuid, 0, 10
     when "a"
+      sim_client.push shooter_body_uuid, -10, 0
     when "s"
+      sim_client.push shooter_body_uuid, 0, -10
     when "d"
+      sim_client.push shooter_body_uuid, 10, 0
     end
   end
   #puts "tick:   #{(Time.now.to_f - s) * 1000}"
