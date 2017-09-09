@@ -290,7 +290,9 @@ function handle(socket) {
   });
 };
 
-fs.unlinkSync(SOCKET_PATH);
+if(fs.existsSync(SOCKET_PATH)) {
+  fs.unlinkSync(SOCKET_PATH);
+};
 var server = net.createServer(handle);
 server.listen(unixsocket);
 

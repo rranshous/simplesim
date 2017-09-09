@@ -144,3 +144,15 @@ module Batcher
     return JSON.parse(self.socket.gets())
   end
 end
+
+class Location
+  attr_accessor :x, :y
+
+  def initialize x: 0, y: 0
+    self.x, self.y = x, y
+  end
+
+  def + loc
+    self.class.new({ x: self.x + loc.x, y: self.y + loc.y })
+  end
+end

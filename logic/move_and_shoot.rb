@@ -17,15 +17,15 @@ destroyers = []
 perminants = []
 targets = []
 
-shooter_loc = OpenStruct.new(x: 0, y: -300)
+shooter_loc = Location.new(x: 0, y: -300)
 
 r = sim_client.add_rectangle(
-  OpenStruct.new(x: 0, y: 300),
+  Location.new(x: 0, y: 300),
   800, 10,
   { static: true }
 )
 vis_client.add_rectangle(
-  OpenStruct.new(x: 0, y: 300),
+  Location.new(x: 0, y: 300),
   800, 10,
   { static: true, body_uuid: r['body_uuid'] }
 )
@@ -33,10 +33,10 @@ perminants << r['body_uuid']
 
 add_random_target = lambda {
   r = sim_client.add_rectangle(
-    OpenStruct.new(x: rand(-100..100), y: rand(-100..100)), 10, 10
+    Location.new(x: rand(-100..100), y: rand(-100..100)), 10, 10
   )
   vis_client.add_rectangle(
-    OpenStruct.new(x: rand(-100..100), y: rand(-100..100)), 10, 10,
+    Location.new(x: rand(-100..100), y: rand(-100..100)), 10, 10,
     { body_uuid: r['body_uuid'] }
   )
   targets << r['body_uuid']
@@ -71,11 +71,14 @@ loop do
   s = Time.now.to_f
   all_details.each do |details|
     x, y = details['position']['x'], details['position']['y']
-    pos_updates << [ details['body_uuid'], OpenStruct.new(x: x, y: y) ]
+    pos_updates << [ details['body_uuid'], Location.new(x: x, y: y) ]
   end
   pos_updates.each do |update|
     if update[1].x.nil? || update[1].y.nil?
       raise "skipping update: #{update}"
+    end
+    if update[0] == shooter_body_uuid
+      shooter_loc = update[1]
     end
     vis_client.set_position(*update)
   end
@@ -102,16 +105,18 @@ loop do
   vis_updates = r.last
   clicks = vis_updates['clicks']
   clicks.each do |pos|
+    bullet_loc = shooter_loc + Location.new(y: 20)
     r = sim_client.add_rectangle(
-      OpenStruct.new(x: shooter_loc.x, y: shooter_loc.y),
-      3, 3
+      bullet_loc, 3, 3
     )
     vis_client.add_rectangle(
-      OpenStruct.new(x: 0, y: 0),
-      3, 3,
+      bullet_loc, 3, 3,
       { body_uuid: r['body_uuid'] }
     )
-    sim_client.set_velocity(r['body_uuid'], pos['x'] / 20.0, pos['y'] / 20.0)
+    # this isn't write now that the origin can move
+    sim_client.set_velocity(r['body_uuid'],
+                            (shooter_loc.x + pos['x']) / 20.0,
+                            (shooter_loc.y - pos['y']).abs / 20.0)
     vis_client.set_color(r['body_uuid'], :red)
     destroyers.push(r['body_uuid'])
   end
