@@ -54,7 +54,7 @@ vis_client.add_rectangle(
   15, 15,
   { body_uuid: shooter_body_uuid }
 )
-#sim_client.set_anti_gravity shooter_body_uuid
+sim_client.set_anti_gravity shooter_body_uuid
 
 vis_client.set_color(shooter_body_uuid, :red)
 perminants << shooter_body_uuid
@@ -107,6 +107,8 @@ loop do
   vis_updates = r.last
   clicks = vis_updates['clicks']
   clicks.each do |pos|
+    x = pos['x'] - shooter_loc.x
+    y = pos['y'] - shooter_loc.y
     bullet_loc = shooter_loc + Location.new(y: 20)
     r = sim_client.add_rectangle(
       bullet_loc, 3, 3,
@@ -116,10 +118,7 @@ loop do
       bullet_loc, 3, 3,
       { body_uuid: r['body_uuid'] }
     )
-    # this isn't write now that the origin can move
-    sim_client.set_velocity(r['body_uuid'],
-                            (pos['x'] - shooter_loc.x) / 20.0,
-                            (pos['y'] - shooter_loc.y) / 20.0)
+    sim_client.set_velocity(r['body_uuid'], x / 20.0, y / 20.0)
     vis_client.set_color(r['body_uuid'], :red)
     destroyers.push(r['body_uuid'])
   end
