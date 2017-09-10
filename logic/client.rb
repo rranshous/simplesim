@@ -90,6 +90,15 @@ class Client
     return send_data to_send
   end
 
+  def set_rotation body_uuid, rotation
+    to_send = {
+      message: 'set_rotation',
+      body_uuid: body_uuid,
+      rotation: rotation
+    }
+    return send_data to_send
+  end
+
   def set_velocity body_uuid, x, y
     to_send = {
       message: 'set_velocity',

@@ -48,7 +48,7 @@ class Controller
       body_uuid = opts['body_uuid'] || SecureRandom.uuid.to_s
       body = OpenStruct.new(body_uuid: body_uuid,
                             shape: :rectangle, color: :black,
-                            left: l, top: t,
+                            left: l, top: t, rotation: 0,
                             width: opts['width'], height: opts['height'])
       bodies.add body
       return { body_uuid: body_uuid }
@@ -67,6 +67,12 @@ class Controller
     l, t = self.class.to_lt x, y
     body.left = l
     body.top = t
+    return { body_uuid: body.body_uuid }
+  end
+
+  def set_rotation opts
+    body = bodies.get opts['body_uuid']
+    body.rotation = opts['rotation']
     return { body_uuid: body.body_uuid }
   end
 
@@ -96,6 +102,10 @@ class Controller
     x = l - (WINDOW_HEIGHT/2)
     y = -(t - (WINDOW_HEIGHT/2))
     [x, y]
+  end
+
+  def self.to_deg rad
+    (rad * 180) / Math::PI
   end
 end
 
@@ -156,19 +166,22 @@ Shoes.app(width: WINDOW_WIDTH, height: WINDOW_HEIGHT, title: 'test') do
         keyboard_interpreter.keypresses.each do |key|
           keypresses << key
         end
-        image(WINDOW_WIDTH, WINDOW_HEIGHT) do
+        #image(WINDOW_WIDTH, WINDOW_HEIGHT) do
           bodies.each do |body|
             case body.shape
             when :rectangle
+              degrees = Controller.to_deg body.rotation
+              rotate degrees
               fill self.send(body.color)
               rect({
                 top: body.top, left: body.left,
                 width: body.width, height: body.height,
                 center: true
               })
+              rotate(-degrees)
             end
           end
-        end
+        #end
       rescue => ex
         puts "EX: #{ex}"
         puts " : #{ex.backtrace}"

@@ -59,7 +59,7 @@ sim_client.set_anti_gravity shooter_body_uuid
 vis_client.set_color(shooter_body_uuid, :red)
 perminants << shooter_body_uuid
 
-100.times do
+50.times do
   add_random_target.call
 end
 
@@ -69,21 +69,19 @@ loop do
   last = Time.now.to_f
   s = Time.now.to_f
   all_details = sim_client.list_details
-  pos_updates = []
   s = Time.now.to_f
+
   all_details.each do |details|
     x, y = details['position']['x'], details['position']['y']
-    pos_updates << [ details['body_uuid'], Location.new(x: x, y: y) ]
-  end
-  pos_updates.each do |update|
-    if update[1].x.nil? || update[1].y.nil?
-      raise "skipping update: #{update}"
+    raise "skipping update: #{update}" if x.nil? || y.nil?
+    loc = Location.new(x: x, y: y)
+    vis_client.set_position(details['body_uuid'], loc)
+    vis_client.set_rotation(details['body_uuid'], details['rotation'])
+    if details['body_uuid'] == shooter_body_uuid
+      shooter_loc = loc
     end
-    if update[0] == shooter_body_uuid
-      shooter_loc = update[1]
-    end
-    vis_client.set_position(*update)
   end
+
   step_ms = [diff_ms, MAX_TICK_MS].min
   sim_updates = sim_client.tick step_ms
   sim_updates['collisions'].each do |collision|
