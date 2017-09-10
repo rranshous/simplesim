@@ -11,7 +11,7 @@ vis_client = Client.new(socket_path: '/tmp/vis.sock')
 vis_client.extend(Batcher)
 vis_client.connect
 
-sim_client.set_gravity(0, 0.2)
+sim_client.set_gravity(0, 0.02)
 
 destroyers = []
 perminants = []
@@ -19,17 +19,17 @@ targets = []
 
 shooter_loc = Location.new(x: 0, y: -300)
 
-r = sim_client.add_rectangle(
-  Location.new(x: 0, y: 300),
-  800, 10,
-  { static: true, density: 1, friction: 0.10 }
-)
-vis_client.add_rectangle(
-  Location.new(x: 0, y: 300),
-  800, 10,
-  { static: true, body_uuid: r['body_uuid'] }
-)
-perminants << r['body_uuid']
+#r = sim_client.add_rectangle(
+#  Location.new(x: 0, y: 300),
+#  800, 10,
+#  { static: true, density: 1, friction: 0.10 }
+#)
+#vis_client.add_rectangle(
+#  Location.new(x: 0, y: 300),
+#  800, 10,
+#  { static: true, body_uuid: r['body_uuid'] }
+#)
+#perminants << r['body_uuid']
 
 add_random_target = lambda {
   r = sim_client.add_rectangle(
