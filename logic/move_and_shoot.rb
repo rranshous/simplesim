@@ -11,7 +11,7 @@ vis_client = Client.new(socket_path: '/tmp/vis.sock')
 vis_client.extend(Batcher)
 vis_client.connect
 
-sim_client.set_gravity(0, 0.1)
+sim_client.set_gravity(0, 0.2)
 
 destroyers = []
 perminants = []
@@ -118,13 +118,13 @@ loop do
     )
     # this isn't write now that the origin can move
     sim_client.set_velocity(r['body_uuid'],
-                            (shooter_loc.x + pos['x']) / 20.0,
-                            (shooter_loc.y - pos['y']).abs / 20.0)
+                            (pos['x'] - shooter_loc.x) / 20.0,
+                            (pos['y'] - shooter_loc.y) / 20.0)
     vis_client.set_color(r['body_uuid'], :red)
     destroyers.push(r['body_uuid'])
   end
   keypresses = vis_updates['keypresses']
-  keypresses.each do |key|
+  keypresses.uniq.each do |key|
     case key
     when "w"
       sim_client.push shooter_body_uuid, 0, 10

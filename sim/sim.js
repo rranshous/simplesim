@@ -43,8 +43,6 @@ function Sim(engine, world) {
         position    = opts.position,
         static      = opts.static;
 
-    console.log("density", density, "friction", friction, "restituion", restitution)
-
     var body = Bodies.rectangle(
       position.x, position.y, width, height,
       { isStatic: static, density: density, friction: friction,
@@ -93,7 +91,6 @@ function Sim(engine, world) {
         force     = Vector.create(direction.x / 100, direction.y / 100),
         position  = Vector.create(0, 0);
 
-    console.log("force: ", force);
     Body.applyForce(body, position, force);
     return true
   };
