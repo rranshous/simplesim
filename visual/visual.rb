@@ -39,7 +39,7 @@ class BodyCollection
 end
 
 class Controller
-  attr_accessor :bodies, :clicks, :keypresses
+  attr_accessor :bodies, :clicks, :keypresses, :mouse_pos
 
   def add opts
     case opts['shape']
@@ -87,7 +87,9 @@ class Controller
     self.clicks.clear
     prev_keypresses = self.keypresses.dup
     self.keypresses.clear
-    return { clicks: prev_clicks, keypresses: prev_keypresses }
+    return { mouse_pos: { x: mouse_pos.x, y: mouse_pos.y },
+             clicks: prev_clicks,
+             keypresses: prev_keypresses }
   end
 
   private
@@ -99,7 +101,7 @@ class Controller
   end
 
   def self.to_xy l, t
-    x = l - (WINDOW_HEIGHT/2)
+    x = l - (WINDOW_WIDTH/2)
     y = -(t - (WINDOW_HEIGHT/2))
     [x, y]
   end
@@ -110,11 +112,13 @@ class Controller
 end
 
 clicks = []
+mouse_pos = OpenStruct.new(x: 0, y: 0)
 keypresses = []
 bodies = BodyCollection.new
 controller = Controller.new
 controller.bodies = bodies
 controller.clicks = clicks
+controller.mouse_pos = mouse_pos
 controller.keypresses = keypresses
 
 Thread.new do
@@ -160,28 +164,30 @@ Shoes.app(width: WINDOW_WIDTH, height: WINDOW_HEIGHT, title: 'test') do
       end
     end
 
+    motion do |left, top|
+      mouse_pos.x, mouse_pos.y = Controller.to_xy(left, top)
+    end
+
     animate(FPS) do
       begin
         clear
         keyboard_interpreter.keypresses.each do |key|
           keypresses << key
         end
-        #image(WINDOW_WIDTH, WINDOW_HEIGHT) do
-          bodies.each do |body|
-            case body.shape
-            when :rectangle
-              degrees = Controller.to_deg body.rotation
-              rotate degrees
-              fill self.send(body.color)
-              rect({
-                top: body.top, left: body.left,
-                width: body.width, height: body.height,
-                center: true
-              })
-              rotate(-degrees)
-            end
+        bodies.each do |body|
+          case body.shape
+          when :rectangle
+            degrees = Controller.to_deg body.rotation
+            rotate degrees
+            fill self.send(body.color)
+            rect({
+              top: body.top, left: body.left,
+              width: body.width, height: body.height,
+              center: true
+            })
+            rotate(-degrees)
           end
-        #end
+        end
       rescue => ex
         puts "EX: #{ex}"
         puts " : #{ex.backtrace}"

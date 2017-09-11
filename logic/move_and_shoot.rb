@@ -4,6 +4,10 @@ require 'ostruct'
 FPS = 60
 MAX_TICK_MS = 30
 
+def to_deg rad
+  (rad * 180) / Math::PI
+end
+
 sim_client = Client.new(socket_path: '/tmp/sim.sock')
 sim_client.connect
 
@@ -76,9 +80,10 @@ loop do
     raise "skipping update: #{update}" if x.nil? || y.nil?
     loc = Location.new(x: x, y: y)
     vis_client.set_position(details['body_uuid'], loc)
-    vis_client.set_rotation(details['body_uuid'], details['rotation'])
     if details['body_uuid'] == shooter_body_uuid
       shooter_loc = loc
+    else
+      vis_client.set_rotation(details['body_uuid'], details['rotation'])
     end
   end
 
@@ -103,11 +108,18 @@ loop do
   vis_client.tick step_ms
   r = vis_client.send_batch
   vis_updates = r.last
+  mouse_pos = vis_updates['mouse_pos']
+  mouse_offset = [ mouse_pos['x'] - shooter_loc.x,
+                   mouse_pos['y'] - shooter_loc.y ]
+  angle_to_mouse_rads = Math.atan2(mouse_offset[1], mouse_offset[0])
+  bullet_offset_x = Math.cos(angle_to_mouse_rads)
+  bullet_offset_y = Math.sin(angle_to_mouse_rads)
+  vis_client.set_rotation(shooter_body_uuid, angle_to_mouse_rads)
   clicks = vis_updates['clicks']
   clicks.each do |pos|
-    x = pos['x'] - shooter_loc.x
-    y = pos['y'] - shooter_loc.y
-    bullet_loc = shooter_loc + Location.new(y: 20)
+    puts "box: #{bullet_offset_x} :: boy: #{bullet_offset_y}"
+    bullet_loc = shooter_loc + Location.new(x: bullet_offset_x * 20,
+                                            y: bullet_offset_y * 20)
     r = sim_client.add_rectangle(
       bullet_loc, 3, 3,
       { density: 0.8, friction: 0.01 }
@@ -116,6 +128,8 @@ loop do
       bullet_loc, 3, 3,
       { body_uuid: r['body_uuid'] }
     )
+    x = pos['x'] - shooter_loc.x
+    y = pos['y'] - shooter_loc.y
     sim_client.set_velocity(r['body_uuid'], x / 20.0, y / 20.0)
     vis_client.set_color(r['body_uuid'], :red)
     destroyers.push(r['body_uuid'])
