@@ -102,6 +102,14 @@ function Sim(engine, world) {
     return true;
   };
 
+  this.setRotation = function(opts) {
+    var body      = this.findBody(opts.body_uuid),
+        rotation  = opts.rotation;
+    console.log("body", body.uuid, "rotation", rotation);
+    Body.setAngle(body, rotation);
+    return true;
+  };
+
   this.detail = function(opts) {
     var body = this.findBody(opts.body_uuid);
     return {
@@ -233,6 +241,15 @@ function Commander(sim) {
     this.sim.setVelocity({
       body_uuid: opts.body_uuid,
       velocity:   opts.velocity
+    });
+    return { body_uuid: opts.body_uuid };
+  };
+
+  this.set_rotation = function(opts) {
+    console.log("set rotation");
+    this.sim.setRotation({
+      body_uuid: opts.body_uuid,
+      rotation:  opts.rotation
     });
     return { body_uuid: opts.body_uuid };
   };

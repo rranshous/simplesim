@@ -80,10 +80,10 @@ loop do
     raise "skipping update: #{update}" if x.nil? || y.nil?
     loc = Location.new(x: x, y: y)
     vis_client.set_position(details['body_uuid'], loc)
+    vis_client.set_rotation(details['body_uuid'], details['rotation'])
     if details['body_uuid'] == shooter_body_uuid
       shooter_loc = loc
     else
-      vis_client.set_rotation(details['body_uuid'], details['rotation'])
     end
   end
 
@@ -114,7 +114,7 @@ loop do
   angle_to_mouse_rads = Math.atan2(mouse_offset[1], mouse_offset[0])
   bullet_offset_x = Math.cos(angle_to_mouse_rads)
   bullet_offset_y = Math.sin(angle_to_mouse_rads)
-  vis_client.set_rotation(shooter_body_uuid, angle_to_mouse_rads)
+  sim_client.set_rotation(shooter_body_uuid, angle_to_mouse_rads)
   clicks = vis_updates['clicks']
   clicks.each do |pos|
     puts "box: #{bullet_offset_x} :: boy: #{bullet_offset_y}"
