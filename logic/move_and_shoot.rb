@@ -112,14 +112,13 @@ loop do
   mouse_offset = [ mouse_pos['x'] - shooter_loc.x,
                    mouse_pos['y'] - shooter_loc.y ]
   angle_to_mouse_rads = Math.atan2(mouse_offset[1], mouse_offset[0])
-  bullet_offset_x = Math.cos(angle_to_mouse_rads)
-  bullet_offset_y = Math.sin(angle_to_mouse_rads)
+  mouse_offset_x = Math.cos(angle_to_mouse_rads)
+  mouse_offset_y = Math.sin(angle_to_mouse_rads)
   sim_client.set_rotation(shooter_body_uuid, angle_to_mouse_rads)
   clicks = vis_updates['clicks']
   clicks.each do |pos|
-    puts "box: #{bullet_offset_x} :: boy: #{bullet_offset_y}"
-    bullet_loc = shooter_loc + Location.new(x: bullet_offset_x * 20,
-                                            y: bullet_offset_y * 20)
+    bullet_loc = shooter_loc + Location.new(x: mouse_offset_x * 20,
+                                            y: mouse_offset_y * 20)
     r = sim_client.add_rectangle(
       bullet_loc, 3, 3,
       { density: 0.8, friction: 0.01 }
@@ -138,13 +137,14 @@ loop do
   keypresses.uniq.each do |key|
     case key
     when "w"
-      sim_client.push shooter_body_uuid, 0, 10
+      sim_client.push shooter_body_uuid, mouse_offset_x * 10, mouse_offset_y * 10
     when "a"
-      sim_client.push shooter_body_uuid, -10, 0
+      sim_client.push shooter_body_uuid, -(mouse_offset_x * 10), 0
     when "s"
-      sim_client.push shooter_body_uuid, 0, -10
+      sim_client.push shooter_body_uuid, -(mouse_offset_x * 10),
+                                         -(mouse_offset_y * 10)
     when "d"
-      sim_client.push shooter_body_uuid, 10, 0
+      sim_client.push shooter_body_uuid, mouse_offset_x * 10, 0
     end
   end
   #puts "tick:   #{(Time.now.to_f - s) * 1000}"
