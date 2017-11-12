@@ -164,4 +164,29 @@ class Location
   def + loc
     self.class.new({ x: self.x + loc.x, y: self.y + loc.y })
   end
+
+  def == other
+    self.x == other.x && self.y == other.y
+  end
+
+  def distance_to other
+    sum = 0
+    sum += (x - other.x) ** 2
+    sum += (y - other.y) ** 2
+    Math.sqrt sum
+  end
+
+  def angle_to other
+    Math.atan2(other.y, other.x)
+  end
+
+  def scaled_vector_to other, scale: 10
+    angle = angle_to other
+    vx = scale * cos(angle) + x
+    vy = scale * sin(angle) + y
+    Vector.new x: vx, y: vy
+  end
+end
+
+class Vector < Location
 end
