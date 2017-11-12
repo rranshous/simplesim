@@ -1,25 +1,15 @@
 require_relative 'client'
 require 'ostruct'
-FPS = 60
-MAX_TICK_MS = 30
 
-sim_client = Client.new(socket_path: '/tmp/sim.sock')
-sim_client.connect
-
-vis_client = Client.new(socket_path: '/tmp/vis.sock')
-vis_client.extend(Batcher)
-vis_client.connect
-
-sim_client.set_gravity(0, 0)
 
 class Ant
   extend Forwardable
 
-  attr_accessor :food, :body_uuid, :location
+  attr_accessor :food, :uuid, :location, :rotation
 
   def_delegator :@location, :x, :y
 
-  def random_walk_toward target: nil, scents: nil, sim: nil
+  def random_walk_toward target: nil, game: nil
     # low odds atm
     random_target = [
       Location.new(10, 0)  + location,
@@ -29,12 +19,13 @@ class Ant
       Location.new(10, 10) + location,
       target
     ].sample
-    walk_toward target: random_target, scents: scents, sim: sim
+    walk_toward target: random_target, game: game
   end
 
-  def walk_toward target: nil, scents: nil, sim: nil
+  def walk_toward target: nil, game: nil
     vector = location.scaled_vector_to target
-    sim.push uuid, vector.x, vector.y
+    #game.scents << location.dup #?
+    game.push body: self, vector: vector
   end
 
   def on_food? foods
@@ -58,6 +49,27 @@ class Ant
   end
 end
 
+class AntColony
+  attr_accessor :ants
+
+  def tick game: nil
+    game.ants.each do |ant|
+      if ant.on_food?(foods)
+        ant.eat_food
+      elsif ant.on_hill?(hills)
+        ant.drop_food
+      else
+        target = ant.has_food? ? hills.near(ant) : scents.near(ant)
+        ant.random_walk_toward target: target, game: game
+      end
+    end
+  end
+end
+
+class Game
+  attr_accessor :scents, :hills, :ants
+end
+
 class LocationCollection
   attr_accessor :locations
 
@@ -75,35 +87,39 @@ class LocationCollection
       location.distance_to target_location
     end.first
   end
+
+  def each &blk
+    locations.each(&blk)
+  end
 end
 
 CENTER = Location.new(x: 0, y: 0)
-ants   = []
-foods  = LocationCollection.new(
+game        = Game.new
+game.foods  = LocationCollection.new(
   locations: [ Location.new(x: 100, y: 100),
                Location.new(x: -200, y: -50) ]
 )
-scents = LocationCollection.new
-hills  = LocationCollection.new([CENTER])
+game.scents = LocationCollection.new
+game.hills  = LocationCollection.new([CENTER])
+game.ants   = []
+colony      = AntColony.new
 
 10.times do
   ant = Ant.new
   ant.location  = CENTER
-  ant.body_uuid = body_uuid
+  game.ants << ant
 end
 
-ants.each do |ant|
+game.ants.each do |ant|
+  game.add_body ant
+end
 
-  if ant.has_food?
-    ant.random_walk_toward target: hills.near(ant), scents: scents, sim: sim_client
-  else
-    ant.random_walk_toward target: scents.near(ant), scents: scents, sim: sim_client
-  end
+game.hills.each do |hill|
+  game.add_body hill
+end
 
-  if ant.on_food?(foods)
-    ant.eat_food
-  elsif ant.on_hill?(hills)
-    ant.drop_food
-  end
-
+game.loop do
+  game.update_bodies ants + hills
+  game.draw_bodies   ants + hills
+  colony.tick        game
 end
