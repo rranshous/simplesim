@@ -105,7 +105,6 @@ function Sim(engine, world) {
   this.setRotation = function(opts) {
     var body      = this.findBody(opts.body_uuid),
         rotation  = opts.rotation;
-    console.log("body", body.uuid, "rotation", rotation);
     Body.setAngle(body, rotation);
     return true;
   };
@@ -246,7 +245,6 @@ function Commander(sim) {
   };
 
   this.set_rotation = function(opts) {
-    console.log("set rotation");
     this.sim.setRotation({
       body_uuid: opts.body_uuid,
       rotation:  opts.rotation

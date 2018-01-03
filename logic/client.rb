@@ -182,9 +182,13 @@ class Location
 
   def scaled_vector_to other, scale: 10
     angle = angle_to other
-    vx = scale * cos(angle) + x
-    vy = scale * sin(angle) + y
+    vx = scale * Math.cos(angle) + x
+    vy = scale * Math.sin(angle) + y
     Vector.new x: vx, y: vy
+  end
+
+  def to_s
+    "<#{self.class} #{x}:#{y}>"
   end
 end
 

@@ -1,22 +1,26 @@
 require_relative 'client'
+require_relative 'game'
 require 'ostruct'
+require 'forwardable'
 
+def log msg
+  STDERR.write "#{msg}\n"
+end
 
-class Ant
-  extend Forwardable
+class Wall < Body
+end
 
-  attr_accessor :food, :uuid, :location, :rotation
-
-  def_delegator :@location, :x, :y
+class Ant < Body
+  attr_accessor :food
 
   def random_walk_toward target: nil, game: nil
     # low odds atm
     random_target = [
-      Location.new(10, 0)  + location,
-      Location.new(-10, 0) + location,
-      Location.new(0, 10)  + location,
-      Location.new(0, -10) + location,
-      Location.new(10, 10) + location,
+      Location.new(x: 10,  y: 0)   + location,
+      Location.new(x: -10, y: 0)   + location,
+      Location.new(x: 0,   y: 10)  + location,
+      Location.new(x: 0,   y: -10) + location,
+      Location.new(x: 10,  y: 10)  + location,
       target
     ].sample
     walk_toward target: random_target, game: game
@@ -47,6 +51,17 @@ class Ant
   def has_food?
     !self.food.nil?
   end
+
+  def tick game: nil
+    if on_food?(game.foods)
+      eat_food
+    elsif on_hill?(game.hills)
+      drop_food
+    else
+      target = has_food? ? game.hills.near(self) : game.foods.near(self)
+      random_walk_toward target: target, game: game
+    end
+  end
 end
 
 class AntColony
@@ -54,72 +69,48 @@ class AntColony
 
   def tick game: nil
     game.ants.each do |ant|
-      if ant.on_food?(foods)
-        ant.eat_food
-      elsif ant.on_hill?(hills)
-        ant.drop_food
-      else
-        target = ant.has_food? ? hills.near(ant) : scents.near(ant)
-        ant.random_walk_toward target: target, game: game
-      end
+      ant.tick game: game
     end
   end
 end
 
 class Game
-  attr_accessor :scents, :hills, :ants
-end
+  attr_accessor :scents, :hills, :ants, :foods, :walls
 
-class LocationCollection
-  attr_accessor :locations
-
-  def initialize locations: []
-    self.locations = locations
-  end
-
-  def << location
-    self.locations << location
-  end
-
-  def near target_location
-    raise ArgumentError if location.nil?
-    locations.sort_by do |location|
-      location.distance_to target_location
-    end.first
-  end
-
-  def each &blk
-    locations.each(&blk)
+  def init_attrs
+    self.scents = BodyCollection.new
+    self.hills =  BodyCollection.new
+    self.ants =   BodyCollection.new
+    self.foods =  BodyCollection.new
+    self.walls =  BodyCollection.new
   end
 end
 
 CENTER = Location.new(x: 0, y: 0)
 game        = Game.new
-game.foods  = LocationCollection.new(
-  locations: [ Location.new(x: 100, y: 100),
-               Location.new(x: -200, y: -50) ]
-)
-game.scents = LocationCollection.new
-game.hills  = LocationCollection.new([CENTER])
-game.ants   = []
+game.walls << Wall.new(location: Location.new(x: 0, y: 300))
+game.walls << Wall.new(location: Location.new(x: 0, y: -300))
+#game.foods  = BodyCollection.new(
+#  [ Body.new(location: Location.new(x: 100, y: 100)),
+#    Body.new(location: Location.new(x: -200, y: -50)) ]
+#)
+#game.scents = BodyCollection.new
+#game.hills  = BodyCollection.new([Body.new(location: CENTER.dup)])
+#game.ants   = BodyCollection.new
 colony      = AntColony.new
 
-10.times do
-  ant = Ant.new
-  ant.location  = CENTER
-  game.ants << ant
-end
+#10.times do
+#  ant = Ant.new
+#  ant.location = CENTER
+#  game.ants << ant
+#end
 
-game.ants.each do |ant|
-  game.add_body ant
-end
+#game.add_bodies bodies: game.ants
+#game.add_bodies bodies: game.hills, static: true
+game.add_bodies bodies: game.walls, static: true, width: 800, height: 10
 
-game.hills.each do |hill|
-  game.add_body hill
-end
-
-game.loop do
-  game.update_bodies ants + hills
-  game.draw_bodies   ants + hills
-  colony.tick        game
+game.run do
+  game.update_bodies
+  game.draw_bodies
+  colony.tick game: game
 end

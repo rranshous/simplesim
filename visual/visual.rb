@@ -42,6 +42,7 @@ class Controller
   attr_accessor :bodies, :clicks, :keypresses, :mouse_pos
 
   def add opts
+    puts "ADDING: #{opts}"
     case opts['shape']
     when 'rectangle'
       l, t = self.class.to_lt opts['position']['x'], opts['position']['y']
