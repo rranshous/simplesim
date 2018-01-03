@@ -90,13 +90,9 @@ CENTER = Location.new(x: 0, y: 0)
 game        = Game.new
 game.walls << Wall.new(location: Location.new(x: 0, y: 300))
 game.walls << Wall.new(location: Location.new(x: 0, y: -300))
-#game.foods  = BodyCollection.new(
-#  [ Body.new(location: Location.new(x: 100, y: 100)),
-#    Body.new(location: Location.new(x: -200, y: -50)) ]
-#)
-#game.scents = BodyCollection.new
-#game.hills  = BodyCollection.new([Body.new(location: CENTER.dup)])
-#game.ants   = BodyCollection.new
+game.foods << Body.new(location: Location.new(x: 100, y: 100))
+game.foods << Body.new(location: Location.new(x: -200, y: -50))
+game.hills << Body.new(location: CENTER.dup)
 colony      = AntColony.new
 
 #10.times do
@@ -106,8 +102,9 @@ colony      = AntColony.new
 #end
 
 #game.add_bodies bodies: game.ants
-#game.add_bodies bodies: game.hills, static: true
+game.add_bodies bodies: game.hills, static: true, width: 25,  height: 25
 game.add_bodies bodies: game.walls, static: true, width: 800, height: 10
+game.add_bodies bodies: game.foods, static: true, width: 3,   height: 3
 
 game.run do
   game.update_bodies
