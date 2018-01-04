@@ -28,7 +28,6 @@ class Ant < Body
 
   def walk_toward target: nil, game: nil
     vector = location.scaled_vector_to target.location, scale: 10
-    #game.scents << location.dup #?
     game.push body: self, vector: vector
     game.set_rotation body: self, rotation: location.angle_to(target.location)
   end

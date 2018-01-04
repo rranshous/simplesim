@@ -89,7 +89,8 @@ function Sim(engine, world) {
     var body      = this.findBody(opts.body_uuid),
         direction = opts.direction,
         force     = Vector.create(direction.x / 100, direction.y / 100),
-        position  = Vector.create(0, 0);
+        position  = Vector.create(body.position.x, body.position.y);
+        //position  = Vector.create(0, 0);
 
     Body.applyForce(body, position, force);
     return true
