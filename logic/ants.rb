@@ -27,7 +27,7 @@ class Ant < Body
   end
 
   def walk_toward target: nil, game: nil
-    vector = location.scaled_vector_to target
+    vector = location.scaled_vector_to target.location
     #game.scents << location.dup #?
     game.push body: self, vector: vector
   end
@@ -59,7 +59,8 @@ class Ant < Body
       drop_food
     else
       target = has_food? ? game.hills.near(self) : game.foods.near(self)
-      random_walk_toward target: target, game: game
+      #random_walk_toward target: target, game: game
+      walk_toward target: target, game: game
     end
   end
 end
@@ -90,20 +91,23 @@ CENTER = Location.new(x: 0, y: 0)
 game        = Game.new
 game.walls << Wall.new(location: Location.new(x: 0, y: 300))
 game.walls << Wall.new(location: Location.new(x: 0, y: -300))
+game.walls << Wall.new(location: Location.new(x: -300, y: 0))
+game.walls << Wall.new(location: Location.new(x: 300, y: 0))
 game.foods << Body.new(location: Location.new(x: 100, y: 100))
 game.foods << Body.new(location: Location.new(x: -200, y: -50))
 game.hills << Body.new(location: CENTER.dup)
 colony      = AntColony.new
 
-#10.times do
-#  ant = Ant.new
-#  ant.location = CENTER
-#  game.ants << ant
-#end
+1.times do
+  ant = Ant.new
+  ant.location = CENTER
+  game.ants << ant
+end
 
-#game.add_bodies bodies: game.ants
+game.add_bodies bodies: game.ants, friction: 1, density: 0.5
 game.add_bodies bodies: game.hills, static: true, width: 25,  height: 25
-game.add_bodies bodies: game.walls, static: true, width: 800, height: 10
+game.add_bodies bodies: game.walls[0..1], static: true, width: 800, height: 100
+game.add_bodies bodies: game.walls[2..3], static: true, width: 100, height: 800
 game.add_bodies bodies: game.foods, static: true, width: 3,   height: 3
 
 game.run do

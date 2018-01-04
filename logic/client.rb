@@ -165,6 +165,10 @@ class Location
     self.class.new({ x: self.x + loc.x, y: self.y + loc.y })
   end
 
+  def - loc
+    self.class.new({ x: self.x - loc.x, y: self.y - loc.y })
+  end
+
   def == other
     self.x == other.x && self.y == other.y
   end
@@ -176,15 +180,23 @@ class Location
     Math.sqrt sum
   end
 
-  def angle_to other
-    Math.atan2(other.y, other.x)
+  def scaled_vector_to other, scale: 10
+    vector = vector_to(other)
+    Vector.new(x: vector.x * scale, y: vector.y * scale)
   end
 
-  def scaled_vector_to other, scale: 10
+  def vector_to other
     angle = angle_to other
-    vx = scale * Math.cos(angle) + x
-    vy = scale * Math.sin(angle) + y
-    Vector.new x: vx, y: vy
+    Vector.new(x: Math.cos(angle), y: Math.sin(angle))
+  end
+
+  def angle_to other
+    offset = offset_of other
+    Math.atan2(offset.y, offset.x)
+  end
+
+  def offset_of other
+    other - self
   end
 
   def to_s

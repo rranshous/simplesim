@@ -48,10 +48,11 @@ class Game
   end
 
   def add_body body: nil, **kwargs
-    opts = { width: 10, height: 10, density: 0.1, static: false }.update(kwargs)
+    opts = { width: 10, height: 10, density: 0.1, static: false, friction: 0.1 }
+    opts.merge!(kwargs)
     r = sim_client.add_rectangle(
       body.location, opts[:width], opts[:height],
-      { density: opts[:density], friction: 0.01, static: opts[:static] }
+      { density: opts[:density], friction: opts[:friction], static: opts[:static] }
     )
     puts 'adding rectangle'
     vis_client.add_rectangle(
