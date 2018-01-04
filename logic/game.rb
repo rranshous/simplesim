@@ -9,7 +9,7 @@ class Game
   FPS = 60
   MAX_TICK_MS = 30
 
-  attr_accessor :vis_client, :sim_client, :last_tick_time, :bodies
+  attr_accessor :vis_client, :sim_client, :last_tick_time, :last_step_time, :bodies
 
   def initialize
     self.bodies = []
@@ -39,6 +39,7 @@ class Game
     step_ms = [diff_ms, MAX_TICK_MS].min
     sim_client.tick step_ms
     vis_client.tick step_ms
+    self.last_step_time = step_ms
     self.last_tick_time = Time.now
   end
 
@@ -64,6 +65,11 @@ class Game
     return body
   end
 
+  def remove_body body: nil
+    vis_client.destroy body.uuid
+    bodies.delete body
+  end
+
   def update_bodies
     sim_client.list_details.each do |details|
       body_uuid = details['body_uuid']
@@ -73,6 +79,8 @@ class Game
       loc = Location.new(x: x, y: y)
       body.location = loc
       body.rotation = details['rotation']
+      body.width    = details['width']
+      body.height   = details['height']
     end
   end
 
@@ -84,8 +92,14 @@ class Game
   end
 
   def push body: nil, vector: nil
-    log "push #{body} => #{vector}"
     sim_client.push body.uuid, vector.x, vector.y
+  end
+
+  def consume food: nil
+    if food
+      foods.delete food
+      remove_body body: food
+    end
   end
 
   def set_rotation body: nil, rotation: nil
@@ -94,7 +108,7 @@ class Game
 
   def run &blk
     loop do
-      blk.call
+      blk.call(self.last_step_time || 0)
       tick
     end
   end
@@ -104,7 +118,7 @@ end
 class Body
   extend Forwardable
 
-  attr_accessor :location, :rotation, :uuid
+  attr_accessor :location, :rotation, :uuid, :width, :height
   def_delegators :@location, :x, :y, :distance_to
 
   def initialize location: nil
@@ -112,8 +126,17 @@ class Body
     init_attrs
   end
 
+  def on? other
+    # TODO: better
+    distance_to(other) < [width, height].max + 1
+  end
+
   def init_attrs
     # overwrite
+  end
+
+  def == other
+    self.uuid == other.uuid
   end
 
   def to_s

@@ -13,7 +13,7 @@ end
 class Ant < Body
   attr_accessor :food
 
-  def random_walk_toward target: nil, game: nil
+  def random_move_toward target: nil, game: nil
     # low odds atm
     random_target = [
       Location.new(x: 10,  y: 0)   + location,
@@ -23,44 +23,29 @@ class Ant < Body
       Location.new(x: 10,  y: 10)  + location,
       target.location
     ].sample
-    walk_toward target: random_target, game: game
+    move_toward target: random_target, game: game
   end
 
-  def walk_toward target: nil, game: nil
+  def move_toward target: nil, game: nil
+    return if target.nil?
     vector = location.scaled_vector_to target.location, scale: 10
     game.push body: self, vector: vector
     game.set_rotation body: self, rotation: location.angle_to(target.location)
   end
 
-  def on_food? foods
-    foods.include? location
+  def find_food foods
+    foods.find { |food| on? food }
   end
 
-  def on_hill? hills
-    hills.include? location
-  end
-
-  def eat_food
-    self.food = true
-  end
-
-  def drop_food
-    self.food = nil
-  end
-
-  def has_food?
-    !self.food.nil?
+  def eat_available_food game: nil, food: nil
+    game.consume food: food
   end
 
   def tick game: nil
-    if on_food?(game.foods)
-      eat_food
-    elsif on_hill?(game.hills)
-      drop_food
+    if food = find_food(game.foods)
+      eat_available_food game: game, food: food
     else
-      target = has_food? ? game.hills.near(self) : game.foods.near(self)
-      #random_walk_toward target: target, game: game
-      walk_toward target: target, game: game
+      move_toward target: game.foods.near(self), game: game
     end
   end
 end
@@ -93,32 +78,33 @@ game.walls << Wall.new(location: Location.new(x: 0, y: 300))
 game.walls << Wall.new(location: Location.new(x: 0, y: -300))
 game.walls << Wall.new(location: Location.new(x: -300, y: 0))
 game.walls << Wall.new(location: Location.new(x: 300, y: 0))
-game.foods << Body.new(location: Location.new(x: 100, y: 100))
-game.foods << Body.new(location: Location.new(x: -200, y: -50))
 game.hills << Body.new(location: CENTER.dup)
-colony      = AntColony.new
-
-1.times do
+100.times do
+  game.foods << Body.new(location: Location.new(x: rand(-300..300),
+                                                y: rand(-300..300)))
+end
+5.times do
   ant = Ant.new
   ant.location = CENTER + Location.new(x: rand(1..45), y: rand(1..45))
   game.ants << ant
 end
+colony      = AntColony.new
 
-game.add_bodies bodies: game.ants, density: 0.5
+game.add_bodies bodies: game.ants, density: 0.3
 game.add_bodies bodies: game.hills, static: true, width: 25,  height: 25
-game.add_bodies bodies: game.walls[0..1], static: true, width: 800, height: 100
-game.add_bodies bodies: game.walls[2..3], static: true, width: 100, height: 800
+game.add_bodies bodies: game.walls[0..1], static: true, width: 800, height: 10
+game.add_bodies bodies: game.walls[2..3], static: true, width: 10, height: 800
 game.add_bodies bodies: game.foods, static: true, width: 3,   height: 3
 
 # tick ants every 1 second
-s = Time.now.to_f
-game.run do
+delta_count = 0
+game.run do |step_delta|
+  delta_count += step_delta
   game.update_bodies
   game.draw_bodies
-  now = Time.now.to_f
-  if now - s > 0.1
-    puts "tick"
+  if delta_count >= 100
+    puts "ticking"
     colony.tick game: game
-    s = now
+    delta_count = delta_count % 100
   end
 end
