@@ -88,6 +88,10 @@ class Game
     sim_client.push body.uuid, vector.x, vector.y
   end
 
+  def set_rotation body: nil, rotation: nil
+    sim_client.set_rotation body.uuid, rotation
+  end
+
   def run &blk
     loop do
       blk.call

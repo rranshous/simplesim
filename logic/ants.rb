@@ -21,15 +21,16 @@ class Ant < Body
       Location.new(x: 0,   y: 10)  + location,
       Location.new(x: 0,   y: -10) + location,
       Location.new(x: 10,  y: 10)  + location,
-      target
+      target.location
     ].sample
     walk_toward target: random_target, game: game
   end
 
   def walk_toward target: nil, game: nil
-    vector = location.scaled_vector_to target.location
+    vector = location.scaled_vector_to target.location, scale: 10
     #game.scents << location.dup #?
     game.push body: self, vector: vector
+    game.set_rotation body: self, rotation: location.angle_to(target.location)
   end
 
   def on_food? foods
@@ -100,18 +101,25 @@ colony      = AntColony.new
 
 1.times do
   ant = Ant.new
-  ant.location = CENTER
+  ant.location = CENTER + Location.new(x: rand(1..45), y: rand(1..45))
   game.ants << ant
 end
 
-game.add_bodies bodies: game.ants, friction: 1, density: 0.5
+game.add_bodies bodies: game.ants, density: 0.5
 game.add_bodies bodies: game.hills, static: true, width: 25,  height: 25
 game.add_bodies bodies: game.walls[0..1], static: true, width: 800, height: 100
 game.add_bodies bodies: game.walls[2..3], static: true, width: 100, height: 800
 game.add_bodies bodies: game.foods, static: true, width: 3,   height: 3
 
+# tick ants every 1 second
+s = Time.now.to_f
 game.run do
   game.update_bodies
   game.draw_bodies
-  colony.tick game: game
+  now = Time.now.to_f
+  if now - s > 0.1
+    puts "tick"
+    colony.tick game: game
+    s = now
+  end
 end
