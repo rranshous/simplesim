@@ -170,6 +170,7 @@ class Location
   end
 
   def == other
+    return false unless other.respond_to?(:x) && other.respond_to(:y)
     self.x == other.x && self.y == other.y
   end
 

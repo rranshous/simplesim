@@ -55,7 +55,6 @@ class Game
       body.location, opts[:width], opts[:height],
       { density: opts[:density], friction: opts[:friction], static: opts[:static] }
     )
-    puts 'adding rectangle'
     vis_client.add_rectangle(
       body.location, opts[:width], opts[:height],
       { body_uuid: r['body_uuid'] }.merge(opts)
@@ -150,5 +149,12 @@ class BodyCollection < Array
     sort_by do |body|
       body.distance_to target_location
     end.first
+  end
+
+  def nearby target_location, max_distance: 10
+    raise ArgumentError if target_location.nil?
+    self
+      .sort_by    { |b| b.distance_to(target_location) }
+      .take_while { |b| b.distance_to(target_location) < max_distance }
   end
 end
