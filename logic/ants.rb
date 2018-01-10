@@ -55,11 +55,14 @@ class Ant < Body
   end
 
   def consume food: nil
-    self.energy += 1
+    self.energy += 10
+  end
+
+  def lose_energy
+    self.energy -= 1
   end
 
   def tick game: nil, nearby_food: []
-    self.energy -= 1
     if nearby_food.size == 0
       move_randomly game: game
     else
@@ -69,6 +72,30 @@ class Ant < Body
         move_toward target: nearby_food.first, game: game
       end
     end
+  end
+end
+
+class BrainedAnt < Ant
+  def tick game: nil, nearby_food: []
+    if food = find_food(nearby_food)
+      eat_available_food game: game, food: food
+    end
+    puts "energy: #{energy}"
+    #rot_clock, rot_cclock, push_forward, push_back = nn.run food_vectors
+    #rot = rot_clock + rot_cclock
+    #push = push_forward + push_back
+    rot = 0.1
+    push = 0.1
+    new_rot = rotation + rot
+    game.set_rotation body: self, rotation: new_rot
+    push_forward game: game, magnitude: push
+  end
+
+  def push_forward game: nil, magnitude: nil
+    x = Math.sin(rotation) * 10
+    y = Math.cos(rotation) * 10
+    in_front = Vector.new(x: x, y: y)
+    game.push body: self, vector: in_front
   end
 end
 
@@ -87,6 +114,7 @@ class Game
     ants.each do |ant|
       ant.tick game: self,
                nearby_food: foods.nearby(ant, max_distance: 20)
+      ant.lose_energy
       if ant.energy <= 0
         kill ant: ant
         add_ant
@@ -95,7 +123,7 @@ class Game
   end
 
   def add_ant
-    ant = Ant.new
+    ant = BrainedAnt.new
     ant.location = CENTER + Location.new(x: rand(1..45), y: rand(1..45))
     self.ants << ant
     add_bodies bodies: [ant], density: 0.3
@@ -135,7 +163,7 @@ game.hills << Body.new(location: CENTER.dup)
 100.times do
   game.add_food
 end
-5.times do
+1.times do
   game.add_ant
 end
 
