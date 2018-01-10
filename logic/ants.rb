@@ -56,7 +56,6 @@ class Ant < Body
 
   def consume food: nil
     self.energy += 1
-    puts "ant consumed food #{energy}"
   end
 
   def tick game: nil, nearby_food: []
