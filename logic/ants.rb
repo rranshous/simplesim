@@ -11,7 +11,7 @@ class Wall < Body
 end
 
 class Ant < Body
-  attr_accessor :food
+  attr_accessor :energy
 
   DIRECTIONS = [
     Location.new(x: 0,  y: 0),
@@ -20,6 +20,10 @@ class Ant < Body
     Location.new(x: 0,   y: 10),
     Location.new(x: 0,   y: -10),
   ]
+
+  def init_attrs
+    self.energy = 100
+  end
 
   def random_move_toward target: nil, game: nil
     # low odds atm
@@ -47,10 +51,16 @@ class Ant < Body
   end
 
   def eat_available_food game: nil, food: nil
-    game.consume food: food
+    game.consume food: food, eater: self
+  end
+
+  def consume food: nil
+    self.energy += 1
+    puts "ant consumed food #{energy}"
   end
 
   def tick game: nil, nearby_food: []
+    self.energy -= 1
     if nearby_food.size == 0
       move_randomly game: game
     else
@@ -59,17 +69,6 @@ class Ant < Body
       else
         move_toward target: nearby_food.first, game: game
       end
-    end
-  end
-end
-
-class AntColony
-  attr_accessor :ants
-
-  def tick game: nil
-    game.ants.each do |ant|
-      ant.tick game: game,
-               nearby_food: game.foods.nearby(ant)
     end
   end
 end
@@ -84,6 +83,44 @@ class Game
     self.foods =  BodyCollection.new
     self.walls =  BodyCollection.new
   end
+
+  def tick_ants
+    ants.each do |ant|
+      ant.tick game: self,
+               nearby_food: foods.nearby(ant, max_distance: 20)
+      if ant.energy <= 0
+        kill ant: ant
+        add_ant
+      end
+    end
+  end
+
+  def add_ant
+    ant = Ant.new
+    ant.location = CENTER + Location.new(x: rand(1..45), y: rand(1..45))
+    self.ants << ant
+    add_bodies bodies: [ant], density: 0.3
+  end
+
+  def add_food
+    self.foods << Body.new(location: Location.new(x: rand(-300..300),
+                                                  y: rand(-300..300)))
+  end
+
+  def consume food: nil, eater: nil
+    if food
+      foods.delete food
+      remove_body body: food
+    end
+    if eater
+      eater.consume food: food
+    end
+  end
+
+  def kill ant: nil
+    ants.delete ant
+    remove_body body: ant
+  end
 end
 
 CENTER = Location.new(x: 0, y: 0)
@@ -94,17 +131,12 @@ game.walls << Wall.new(location: Location.new(x: -400, y: 0))
 game.walls << Wall.new(location: Location.new(x: 400, y: 0))
 game.hills << Body.new(location: CENTER.dup)
 100.times do
-  game.foods << Body.new(location: Location.new(x: rand(-300..300),
-                                                y: rand(-300..300)))
+  game.add_food
 end
 5.times do
-  ant = Ant.new
-  ant.location = CENTER + Location.new(x: rand(1..45), y: rand(1..45))
-  game.ants << ant
+  game.add_ant
 end
-colony      = AntColony.new
 
-game.add_bodies bodies: game.ants, density: 0.3
 game.add_bodies bodies: game.hills, static: true, width: 25,  height: 25
 game.add_bodies bodies: game.walls[0..1], static: true, width: 800, height: 100
 game.add_bodies bodies: game.walls[2..3], static: true, width: 100, height: 800
@@ -116,7 +148,7 @@ game.run do |step_delta|
   game.update_bodies
   game.draw_bodies
   if delta_count >= 100
-    colony.tick game: game
+    game.tick_ants
     delta_count = delta_count % 100
   end
 end

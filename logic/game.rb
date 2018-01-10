@@ -94,13 +94,6 @@ class Game
     sim_client.push body.uuid, vector.x, vector.y
   end
 
-  def consume food: nil
-    if food
-      foods.delete food
-      remove_body body: food
-    end
-  end
-
   def set_rotation body: nil, rotation: nil
     sim_client.set_rotation body.uuid, rotation
   end
