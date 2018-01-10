@@ -103,14 +103,17 @@ class Game
   end
 
   def add_food
-    self.foods << Body.new(location: Location.new(x: rand(-300..300),
-                                                  y: rand(-300..300)))
+    food = Body.new(location: Location.new(x: rand(-300..300),
+                                           y: rand(-300..300)))
+    self.foods << food
+    add_bodies bodies: [food], static: true, width: 3, height: 3
   end
 
   def consume food: nil, eater: nil
     if food
       foods.delete food
       remove_body body: food
+      add_food
     end
     if eater
       eater.consume food: food
@@ -140,7 +143,6 @@ end
 game.add_bodies bodies: game.hills, static: true, width: 25,  height: 25
 game.add_bodies bodies: game.walls[0..1], static: true, width: 800, height: 100
 game.add_bodies bodies: game.walls[2..3], static: true, width: 100, height: 800
-game.add_bodies bodies: game.foods, static: true, width: 3,   height: 3
 
 delta_count = 0
 game.run do |step_delta|
