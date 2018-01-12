@@ -76,11 +76,15 @@ class Ant < Body
 end
 
 class BrainedAnt < Ant
+  SENSOR_ANGLES = [-0.2, -0.1, 0.1, 0.2]
+
   def tick game: nil, nearby_food: []
+    # for now they'll eat automatically when they are near food
     if food = find_food(nearby_food)
       eat_available_food game: game, food: food
     end
-    puts "energy: #{energy}"
+    food_vectors = sense_food(nearby_food)
+    puts "foods: #{food_vectors}"
     #rot_clock, rot_cclock, push_forward, push_back = nn.run food_vectors
     #rot = rot_clock + rot_cclock
     #push = push_forward + push_back
@@ -92,10 +96,30 @@ class BrainedAnt < Ant
   end
 
   def push_forward game: nil, magnitude: nil
-    x = Math.sin(rotation) * 10
-    y = Math.cos(rotation) * 10
+    x = Math.sin(rotation) * magnitude * 10
+    y = Math.cos(rotation) * magnitude * 10
     in_front = Vector.new(x: x, y: y)
     game.push body: self, vector: in_front
+  end
+
+  def sense_food foods
+    # ant can see only in front
+    # it has 4 sensors, all "ahead" of it and covering
+    # diff lines of sight
+    sensor_distance = 30
+    sensor_range = 10
+    sensor_positions = SENSOR_ANGLES.map do |a|
+      r = rotation + a
+      x = Math.sin(r) * sensor_distance
+      y = Math.cos(r) * sensor_distance
+      Location.new(x: x, y: y) + location
+    end
+    sensor_positions.map do |loc|
+      food_in_range = foods
+        .select { |f| loc.distance_to(f) <= sensor_range }
+        .any?
+      food_in_range ? 1 : 0
+    end
   end
 end
 
@@ -113,7 +137,7 @@ class Game
   def tick_ants
     ants.each do |ant|
       ant.tick game: self,
-               nearby_food: foods.nearby(ant, max_distance: 20)
+               nearby_food: foods.nearby(ant, max_distance: 50)
       ant.lose_energy
       if ant.energy <= 0
         kill ant: ant
