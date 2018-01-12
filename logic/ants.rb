@@ -85,11 +85,10 @@ class BrainedAnt < Ant
     end
     food_vectors = sense_food(nearby_food)
     puts "foods: #{food_vectors}"
-    #rot_clock, rot_cclock, push_forward, push_back = nn.run food_vectors
-    #rot = rot_clock + rot_cclock
-    #push = push_forward + push_back
-    rot = 0.1
-    push = 0.1
+    rot_clock, rot_cclock, push_forward, push_back = nn.run food_vectors
+    rot = rot_clock + rot_cclock
+    push = push_forward + push_back
+    puts "outputs: #{rot_clock} #{rot_cclock} #{push_forward} #{push_back}"
     new_rot = rotation + rot
     game.set_rotation body: self, rotation: new_rot
     push_forward game: game, magnitude: push
