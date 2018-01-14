@@ -115,11 +115,13 @@ class Body
 
   def initialize location: nil
     self.location = location
+    self.rotation = 0
     init_attrs
   end
 
   def on? other
     # TODO: better
+    return false if width.nil? && height.nil?
     distance_to(other) < [width, height].max + 1
   end
 

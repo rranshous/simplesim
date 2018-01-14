@@ -12,7 +12,7 @@ class Wall < Body
 end
 
 class Ant < Body
-  attr_accessor :energy, :individual
+  attr_accessor :energy
 
   DIRECTIONS = [
     Location.new(x: 0,  y: 0),
@@ -23,8 +23,7 @@ class Ant < Body
   ]
 
   def init_attrs
-    self.energy = 100
-    self.individual = Individual.new_random
+    self.energy = start_energy_level
   end
 
   def random_move_toward target: nil, game: nil
@@ -60,8 +59,8 @@ class Ant < Body
     self.energy += 10
   end
 
-  def lose_energy
-    self.energy -= 1
+  def lose_energy amt: 1
+    self.energy -= amt
   end
 
   def tick game: nil, nearby_food: []
@@ -75,10 +74,21 @@ class Ant < Body
       end
     end
   end
+
+  def start_energy_level
+    100
+  end
 end
 
 class BrainedAnt < Ant
   SENSOR_ANGLES = [-0.2, -0.1, 0.1, 0.2]
+
+  attr_accessor :individual, :is_child
+
+  def init_attrs
+    super
+    self.individual = Individual.new_random
+  end
 
   def tick game: nil, nearby_food: []
     # for now they'll eat automatically when they are near food
@@ -86,11 +96,11 @@ class BrainedAnt < Ant
       eat_available_food game: game, food: food
     end
     food_vectors = sense_food(nearby_food)
-    puts "foods: #{food_vectors}"
+    #puts "foods: #{food_vectors}"
     rot_clock, rot_cclock, push_forward, push_back = brain.run food_vectors
     rot = rot_clock + rot_cclock
     push = push_forward + push_back
-    puts "outputs: #{rot_clock} #{rot_cclock} #{push_forward} #{push_back}"
+    #puts "outputs: #{rot_clock} #{rot_cclock} #{push_forward} #{push_back}"
     new_rot = rotation + rot
     game.set_rotation body: self, rotation: new_rot
     push_forward game: game, magnitude: push
@@ -128,6 +138,12 @@ class BrainedAnt < Ant
                      output_layer_size: 4)
       .create_from(self.individual)
   end
+
+  def + other
+    ant = self.class.new
+    ant.individual = ant.individual + other.individual
+    ant
+  end
 end
 
 class Game
@@ -148,13 +164,17 @@ class Game
       ant.lose_energy
       if ant.energy <= 0
         kill ant: ant
-        add_ant
+        add_ant unless ant.is_child
+      elsif ant.energy > ant.start_energy_level
+        puts "MATING: #{ant} [#{ant.energy}]"
+        mate = ants.sort_by(&:energy).reverse.find {|a| a != ant }
+        add_ant ant: ant + mate
+        ant.lose_energy amt: ant.energy / 4
       end
     end
   end
 
-  def add_ant
-    ant = BrainedAnt.new
+  def add_ant ant: BrainedAnt.new
     ant.location = CENTER + Location.new(x: rand(1..45), y: rand(1..45))
     self.ants << ant
     add_bodies bodies: [ant], density: 0.3
@@ -191,10 +211,10 @@ game.walls << Wall.new(location: Location.new(x: 0, y: -400))
 game.walls << Wall.new(location: Location.new(x: -400, y: 0))
 game.walls << Wall.new(location: Location.new(x: 400, y: 0))
 game.hills << Body.new(location: CENTER.dup)
-100.times do
+50.times do
   game.add_food
 end
-1.times do
+10.times do
   game.add_ant
 end
 
