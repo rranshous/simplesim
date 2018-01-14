@@ -1,5 +1,6 @@
 require_relative 'client'
 require_relative 'game'
+require_relative 'slowvolve/lib'
 require 'ostruct'
 require 'forwardable'
 
@@ -11,7 +12,7 @@ class Wall < Body
 end
 
 class Ant < Body
-  attr_accessor :energy
+  attr_accessor :energy, :individual
 
   DIRECTIONS = [
     Location.new(x: 0,  y: 0),
@@ -23,6 +24,7 @@ class Ant < Body
 
   def init_attrs
     self.energy = 100
+    self.individual = Individual.new_random
   end
 
   def random_move_toward target: nil, game: nil
@@ -85,7 +87,7 @@ class BrainedAnt < Ant
     end
     food_vectors = sense_food(nearby_food)
     puts "foods: #{food_vectors}"
-    rot_clock, rot_cclock, push_forward, push_back = nn.run food_vectors
+    rot_clock, rot_cclock, push_forward, push_back = brain.run food_vectors
     rot = rot_clock + rot_cclock
     push = push_forward + push_back
     puts "outputs: #{rot_clock} #{rot_cclock} #{push_forward} #{push_back}"
@@ -119,6 +121,12 @@ class BrainedAnt < Ant
         .any?
       food_in_range ? 1 : 0
     end
+  end
+
+  def brain
+    BrainFactory.new(input_layer_size: 4,
+                     output_layer_size: 4)
+      .create_from(self.individual)
   end
 end
 
