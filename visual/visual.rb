@@ -46,8 +46,9 @@ class Controller
     when 'rectangle'
       l, t = self.class.to_lt opts['position']['x'], opts['position']['y']
       body_uuid = opts['body_uuid'] || SecureRandom.uuid.to_s
+      color = opts['color'] || :black
       body = OpenStruct.new(body_uuid: body_uuid,
-                            shape: :rectangle, color: :black,
+                            shape: :rectangle, color: color,
                             left: l, top: t, rotation: 0,
                             width: opts['width'], height: opts['height'])
       bodies.add body
@@ -177,9 +178,10 @@ Shoes.app(width: WINDOW_WIDTH, height: WINDOW_HEIGHT, title: 'test') do
         bodies.each do |body|
           case body.shape
           when :rectangle
+            color = self.send(body.color) rescue body.color
             degrees = Controller.to_deg body.rotation
             rotate degrees
-            fill self.send(body.color)
+            fill color
             rect({
               top: body.top, left: body.left,
               width: body.width, height: body.height,

@@ -110,6 +110,13 @@ function Sim(engine, world) {
     return true;
   };
 
+  this.setPosition = function(opts) {
+    var body     = this.findBody(opts.body_uuid),
+        position = Vector.create(opts.position.x, opts.position.y);
+    Body.setPosition(body, position);
+    return true
+  };
+
   this.detail = function(opts) {
     var body = this.findBody(opts.body_uuid);
     return {
@@ -252,6 +259,14 @@ function Commander(sim) {
     });
     return { body_uuid: opts.body_uuid };
   };
+
+  this.set_position = function(opts) {
+    this.sim.setPosition({
+      body_uuid: opts.body_uuid,
+      position: opts.position
+    });
+    return { body_uuid: opts.body_uuid };
+  }
 
   this.set_gravity = function(opts) {
     return this.sim.setGravity({x: opts.x, y: opts.y});

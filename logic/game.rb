@@ -98,6 +98,10 @@ class Game
     sim_client.set_rotation body.uuid, rotation
   end
 
+  def set_position body: nil, position: nil
+    sim_client.set_position(body.uuid, position)
+  end
+
   def run &blk
     loop do
       blk.call(self.last_step_time || 0)

@@ -8,11 +8,17 @@ def log msg
   STDERR.write "#{msg}\n"
 end
 
+GEN_SIZE = 20
+BRAIN_FACTORY = BrainFactory.new(input_layer_size: 4,
+                                 output_layer_size: 4)
+
 class Wall < Body
 end
 
 class Ant < Body
-  attr_accessor :energy
+  attr_accessor :energy, :foods_eaten, :seq
+
+  @@counter = 0
 
   DIRECTIONS = [
     Location.new(x: 0,  y: 0),
@@ -23,7 +29,9 @@ class Ant < Body
   ]
 
   def init_attrs
+    self.seq = @@counter += 1
     self.energy = start_energy_level
+    self.foods_eaten = 0
   end
 
   def random_move_toward target: nil, game: nil
@@ -56,7 +64,8 @@ class Ant < Body
   end
 
   def consume food: nil
-    self.energy += 10
+    self.energy += 50
+    self.foods_eaten += 1
   end
 
   def lose_energy amt: 1
@@ -96,11 +105,9 @@ class BrainedAnt < Ant
       eat_available_food game: game, food: food
     end
     food_vectors = sense_food(nearby_food)
-    #puts "foods: #{food_vectors}"
     rot_clock, rot_cclock, push_forward, push_back = brain.run food_vectors
     rot = rot_clock + rot_cclock
     push = push_forward + push_back
-    #puts "outputs: #{rot_clock} #{rot_cclock} #{push_forward} #{push_back}"
     new_rot = rotation + rot
     game.set_rotation body: self, rotation: new_rot
     push_forward game: game, magnitude: push
@@ -134,14 +141,13 @@ class BrainedAnt < Ant
   end
 
   def brain
-    BrainFactory.new(input_layer_size: 4,
-                     output_layer_size: 4)
-      .create_from(self.individual)
+    BRAIN_FACTORY.create_from(self.individual)
   end
 
   def + other
     ant = self.class.new
     ant.individual = ant.individual + other.individual
+    puts "[#{ant.seq}]\tnew brain [#{self.seq}:#{other.seq}]:\t#{self.foods_eaten}!#{other.foods_eaten} _#{BRAIN_FACTORY.hidden_layer_size_for ant.individual}"
     ant
   end
 end
@@ -162,22 +168,40 @@ class Game
       ant.tick game: self,
                nearby_food: foods.nearby(ant, max_distance: 50)
       ant.lose_energy
-      if ant.energy <= 0
-        kill ant: ant
-        add_ant unless ant.is_child
-      elsif ant.energy > ant.start_energy_level
-        puts "MATING: #{ant} [#{ant.energy}]"
-        mate = ants.sort_by(&:energy).reverse.find {|a| a != ant }
-        add_ant ant: ant + mate
-        ant.lose_energy amt: ant.energy / 4
-      end
     end
   end
 
-  def add_ant ant: BrainedAnt.new
-    ant.location = CENTER + Location.new(x: rand(1..45), y: rand(1..45))
+  def tick_generation
+    sorted_ants = ants.sort_by(&:energy).reverse
+    best_ants = sorted_ants.take(ants.length / 3)
+    worst_ants = ants - best_ants
+    worst_ants.each{ |a| kill ant: a }
+    to_add = GEN_SIZE - ants.size
+    puts "adding: #{to_add}"
+    to_add.times do
+      add_ant ant: breed_best
+    end
+    best_ants.each do |ant|
+      set_position body: ant, position: random_starting_location
+    end
+  end
+
+  def breed_best
+    sorted_ants = ants.sort_by(&:energy).reverse
+    best = sorted_ants[0..(sorted_ants.length/3)].sample(2)
+    best.reduce(&:+)
+  end
+
+  def add_ant ant: nil
+    ant ||= BrainedAnt.new
+    ant.location = random_starting_location
     self.ants << ant
-    add_bodies bodies: [ant], density: 0.3
+    random_color = "%06x" % (rand * 0xffffff)
+    add_bodies bodies: [ant], density: 0.3, color: random_color
+  end
+
+  def random_starting_location
+    CENTER + Location.new(x: rand(1..45), y: rand(1..45))
   end
 
   def add_food
@@ -214,7 +238,7 @@ game.hills << Body.new(location: CENTER.dup)
 50.times do
   game.add_food
 end
-10.times do
+GEN_SIZE.times do
   game.add_ant
 end
 
@@ -222,13 +246,20 @@ game.add_bodies bodies: game.hills, static: true, width: 25,  height: 25
 game.add_bodies bodies: game.walls[0..1], static: true, width: 800, height: 100
 game.add_bodies bodies: game.walls[2..3], static: true, width: 100, height: 800
 
-delta_count = 0
+tick_delta_count = 0
+generation_delta_count = 0
 game.run do |step_delta|
-  delta_count += step_delta
+  tick_delta_count += step_delta
+  generation_delta_count += step_delta
   game.update_bodies
   game.draw_bodies
-  if delta_count >= 100
+  if tick_delta_count >= 100
     game.tick_ants
-    delta_count = delta_count % 100
+    tick_delta_count = tick_delta_count % 100
+  end
+  if generation_delta_count >= 10000
+    puts "TICKING GEN"
+    game.tick_generation
+    generation_delta_count = generation_delta_count % 10000
   end
 end
