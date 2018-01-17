@@ -157,3 +157,18 @@ class BodyCollection < Array
       .take_while { |b| b.distance_to(target_location) < max_distance }
   end
 end
+
+module RainbowGenerator
+  def self.hex
+    rainbow_colors = [
+      '#9400D3', '#4B0082', '#0000FF',
+      '#00FF00', '#FFFF00', '#FF7F00', '#FF0000'
+    ]
+    last_color = '#000000'
+    rainbow_colors.map do |color|
+      c = Gradient.new(step: 0.1, colors: [last_color, color]).hex
+      last_color = color
+      c
+    end.flatten
+  end
+end

@@ -1,6 +1,7 @@
 require_relative 'client'
 require_relative 'game'
 require_relative 'slowvolve/lib'
+require_relative 'gradient_generator'
 require 'ostruct'
 require 'forwardable'
 
@@ -153,7 +154,8 @@ class BrainedAnt < Ant
 end
 
 class Game
-  attr_accessor :scents, :hills, :ants, :foods, :walls
+  attr_accessor :scents, :hills, :ants, :foods, :walls,
+                :generation_count, :colors
 
   def init_attrs
     self.scents = BodyCollection.new
@@ -161,6 +163,8 @@ class Game
     self.ants =   BodyCollection.new
     self.foods =  BodyCollection.new
     self.walls =  BodyCollection.new
+    self.colors = RainbowGenerator.hex.cycle
+    self.generation_count = 0
   end
 
   def tick_ants
@@ -172,14 +176,17 @@ class Game
   end
 
   def tick_generation
+    self.generation_count += 1
+    puts "Generation: #{generation_count}"
     sorted_ants = ants.sort_by(&:energy).reverse
     best_ants = sorted_ants.take(ants.length / 3)
     worst_ants = ants - best_ants
     worst_ants.each{ |a| kill ant: a }
     to_add = GEN_SIZE - ants.size
-    puts "adding: #{to_add}"
+    color = colors.next
+    puts "color: #{color}"
     to_add.times do
-      add_ant ant: breed_best
+      add_ant ant: breed_best, color: color
     end
     best_ants.each do |ant|
       set_position body: ant, position: random_starting_location
@@ -192,12 +199,11 @@ class Game
     best.reduce(&:+)
   end
 
-  def add_ant ant: nil
+  def add_ant ant: nil, color: :black
     ant ||= BrainedAnt.new
     ant.location = random_starting_location
     self.ants << ant
-    random_color = "%06x" % (rand * 0xffffff)
-    add_bodies bodies: [ant], density: 0.3, color: random_color
+    add_bodies bodies: [ant], density: 0.3, color: color
   end
 
   def random_starting_location
@@ -258,7 +264,6 @@ game.run do |step_delta|
     tick_delta_count = tick_delta_count % 100
   end
   if generation_delta_count >= 10000
-    puts "TICKING GEN"
     game.tick_generation
     generation_delta_count = generation_delta_count % 10000
   end
