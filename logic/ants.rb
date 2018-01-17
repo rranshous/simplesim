@@ -182,16 +182,24 @@ class Game
     self.generation_count += 1
     puts "Generation: #{generation_count}"
     sorted_ants = ants.sort_by(&:energy).reverse
-    best_ants = sorted_ants.take(ants.length / 3)
+    best_ants = sorted_ants.take(GEN_SIZE / 3)
     worst_ants = ants - best_ants
     worst_ants.each{ |a| kill ant: a }
     to_add = GEN_SIZE - ants.size
+    to_breed = (to_add * 0.8).round
+    to_random = to_add % to_breed
+    puts "K: #{best_ants.size} ; A: #{to_add} ; B: #{to_breed} ; R #{to_random}"
     color = colors.next
-    Array.new(to_add) { breed_new_ant }.each do |ant|
+    Array.new(to_breed) { breed_new_ant }.each do |ant|
       add_ant ant: ant, color: color
     end
+    to_random.times do
+      add_ant ant: nil, color: color
+    end
     best_ants.each do |ant|
-      set_position body: ant, position: random_starting_location
+      set_position body: ant,
+                   position: random_starting_location
+      ant.energy = ant.start_energy_level
     end
   end
 
@@ -207,7 +215,7 @@ class Game
   end
 
   def random_starting_location
-    CENTER + Location.new(x: rand(1..45), y: rand(1..45))
+    CENTER + Location.new(x: rand(-50..50), y: rand(-50..50))
   end
 
   def add_food
@@ -263,8 +271,8 @@ game.run do |step_delta|
     game.tick_ants
     tick_delta_count = tick_delta_count % 100
   end
-  if generation_delta_count >= 10000
+  if generation_delta_count >= 20000
     game.tick_generation
-    generation_delta_count = generation_delta_count % 10000
+    generation_delta_count = generation_delta_count % 20000
   end
 end
