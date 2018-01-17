@@ -126,7 +126,7 @@ class Body
   def on? other
     # TODO: better
     return false if width.nil? && height.nil?
-    distance_to(other) < [width, height].max + 1
+    distance_to(other) < [width, height].max + 5
   end
 
   def init_attrs

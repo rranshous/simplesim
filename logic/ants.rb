@@ -125,7 +125,7 @@ class BrainedAnt < Ant
     # ant can see only in front
     # it has 4 sensors, all "ahead" of it and covering
     # diff lines of sight
-    sensor_distance = 30
+    sensor_distance = 10
     sensor_range = 10
     sensor_positions = SENSOR_ANGLES.map do |a|
       r = rotation + a
@@ -148,7 +148,7 @@ class BrainedAnt < Ant
   def + other
     ant = self.class.new
     ant.individual = ant.individual + other.individual
-    puts "[#{ant.seq}]\tnew brain [#{self.seq}:#{other.seq}]:\t#{self.foods_eaten}!#{other.foods_eaten} _#{BRAIN_FACTORY.hidden_layer_size_for ant.individual}"
+    puts "[#{ant.seq}]\tnew brain [#{self.seq}:#{other.seq}]:\t#{self.energy}!#{other.energy} _#{BRAIN_FACTORY.hidden_layer_size_for ant.individual}"
     ant
   end
 end
@@ -172,6 +172,9 @@ class Game
       ant.tick game: self,
                nearby_food: foods.nearby(ant, max_distance: 50)
       ant.lose_energy
+      if ant.energy <= 0
+        kill ant: ant
+      end
     end
   end
 
@@ -184,19 +187,16 @@ class Game
     worst_ants.each{ |a| kill ant: a }
     to_add = GEN_SIZE - ants.size
     color = colors.next
-    puts "color: #{color}"
-    to_add.times do
-      add_ant ant: breed_best, color: color
+    Array.new(to_add) { breed_new_ant }.each do |ant|
+      add_ant ant: ant, color: color
     end
     best_ants.each do |ant|
       set_position body: ant, position: random_starting_location
     end
   end
 
-  def breed_best
-    sorted_ants = ants.sort_by(&:energy).reverse
-    best = sorted_ants[0..(sorted_ants.length/3)].sample(2)
-    best.reduce(&:+)
+  def breed_new_ant
+    ants.sample(2).reduce(&:+)
   end
 
   def add_ant ant: nil, color: :black
