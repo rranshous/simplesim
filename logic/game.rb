@@ -7,7 +7,7 @@ end
 class Game
 
   FPS = 60
-  MAX_TICK_MS = 30
+  MAX_TICK_MS = 20
 
   attr_accessor :vis_client, :sim_client, :last_tick_time, :last_step_time, :bodies
 
