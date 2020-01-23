@@ -134,7 +134,13 @@ class Client
   end
 end
 
-module Batcher
+class BatcherClient < Client
+
+  def tick *args
+    super *args
+    send_batch
+  end
+
   def send_data data
     (@pending ||= []) << data
   end
@@ -150,6 +156,7 @@ module Batcher
   def send_data_orig to_send
     self.socket.write(JSON.dump(to_send))
     self.socket.write("\n")
+    self.socket.flush
     return JSON.parse(self.socket.gets())
   end
 end

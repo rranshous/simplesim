@@ -5,7 +5,7 @@ require 'socket'
 require 'securerandom'
 require_relative 'keyboard'
 
-FPS = 60
+FPS = 10
 WINDOW_WIDTH = 800
 WINDOW_HEIGHT = 800
 SOCKET_PATH = "/tmp/vis.sock"
