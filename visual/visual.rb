@@ -112,15 +112,18 @@ class Controller
   end
 end
 
-clicks = []
-mouse_pos = OpenStruct.new(x: 0, y: 0)
-keypresses = []
-bodies = BodyCollection.new
 controller = Controller.new
-controller.bodies = bodies
-controller.clicks = clicks
-controller.mouse_pos = mouse_pos
-controller.keypresses = keypresses
+controller.bodies = BodyCollection.new
+controller.clicks = []
+controller.mouse_pos = OpenStruct.new(x: 0, y: 0)
+controller.keypresses = []
+
+def timecheck(label)
+  s = Time.now.to_f
+  r = yield
+  puts "#{label}: #{Time.now.to_f - s}"
+  r
+end
 
 Thread.new do
   loop do
@@ -131,7 +134,8 @@ Thread.new do
       UNIXServer.open(SOCKET_PATH) do |serv|
         s = serv.accept
         loop do
-          data = JSON.load(s.gets)
+          wire_data = s.gets
+          data = JSON.load(wire_data)
           if data['messages']
             r = data['messages'].map do |message_data|
               controller.send message_data['message'], message_data
@@ -159,37 +163,46 @@ Shoes.app(width: WINDOW_WIDTH, height: WINDOW_HEIGHT, title: 'test') do
     click do |_button, left, top|
       begin
         x, y = Controller.to_xy(left, top)
-        clicks << { x: x, y: y }
+        controller.clicks << { x: x, y: y }
       rescue => ex
         puts "CEX: #{ex}"
       end
     end
 
     motion do |left, top|
-      mouse_pos.x, mouse_pos.y = Controller.to_xy(left, top)
+      controller.mouse_pos.x, controller.mouse_pos.y = Controller.to_xy(left, top)
     end
 
-    animate(FPS) do
+    load_keypresses = lambda do
+      keyboard_interpreter.keypresses.each do |key|
+        controller.keypresses << key
+      end
+    end
+
+    update_bodies = lambda do
+      controller.bodies.each do |body|
+        case body.shape
+        when :rectangle
+          color = self.send(body.color) rescue body.color
+          degrees = Controller.to_deg body.rotation
+          rotate degrees
+          fill color
+          rect({
+            top: body.top, left: body.left,
+            width: body.width, height: body.height,
+            center: true
+          })
+          rotate(-degrees)
+        end
+      end
+    end
+
+    animate(FPS) do |i|
+      puts "visual bodies: #{controller.bodies.size}" if i % 100 == 0
       begin
         clear
-        keyboard_interpreter.keypresses.each do |key|
-          keypresses << key
-        end
-        bodies.each do |body|
-          case body.shape
-          when :rectangle
-            color = self.send(body.color) rescue body.color
-            degrees = Controller.to_deg body.rotation
-            rotate degrees
-            fill color
-            rect({
-              top: body.top, left: body.left,
-              width: body.width, height: body.height,
-              center: true
-            })
-            rotate(-degrees)
-          end
-        end
+        load_keypresses.call()
+        update_bodies.call()
       rescue => ex
         puts "EX: #{ex}"
         puts " : #{ex.backtrace}"

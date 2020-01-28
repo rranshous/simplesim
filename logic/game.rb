@@ -65,6 +65,7 @@ class Game
 
   def remove_body body: nil
     vis_client.destroy body.uuid
+    sim_client.destroy body.uuid
     bodies.delete body
   end
 

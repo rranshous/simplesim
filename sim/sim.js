@@ -305,11 +305,8 @@ var engine = Engine.create(),
 engine.positionIterations = 10;
 engine.velocityIterations = 8;
 
-Events.on(world, 'afterAdd', function(event) {
-  //console.log('added to world:', event.object);
-});
-
-
+// Events.on(world, 'afterAdd', function(event) {
+// });
 
 var sim       = new Sim(engine, world),
     commander = new Commander(sim);
