@@ -1,14 +1,29 @@
 require_relative 'client'
 require_relative 'game'
 
+
 class Shooter < Body
-  attr_accessor :speed
+  attr_accessor :max_speed, :velocity, :acceleration
 
   def init_attrs
     self.location = Location.new(x: 0, y: 0)
     self.width = 20
     self.height = 20
-    self.speed = 1
+    self.max_speed = 0.8
+    self.acceleration = 0.05
+    self.velocity = new_capped_vector
+  end
+
+  def velocity= other
+    @velocity = new_capped_vector
+    self.velocity.x = other.x
+    self.velocity.y = other.y
+    self.velocity
+  end
+
+  def new_capped_vector
+    CappedVector.new max_x: self.max_speed,
+                     max_y: self.max_speed
   end
 end
 
@@ -30,7 +45,12 @@ class Game
     'w' => 'forward',
     's' => 'backward',
     'a' => 'leftward',
-    'd' => 'rightward'
+    'd' => 'rightward',
+
+    'w' => 'absolute_up',
+    's' => 'absolute_down',
+    'a' => 'absolute_left',
+    'd' => 'absolute_right',
   }
 
   attr_accessor :shooter, :bullets
@@ -67,13 +87,12 @@ class Game
   end
 
   def handle_shooter_move direction
-    return if mouse_pos.distance_to(shooter) < 20
     vector = shooter.send(direction)
-    multiplier = shooter.speed
-    if mouse_pos.distance_to(shooter) < shooter.width * 3
-      multiplier *= shooter.distance_to(mouse_pos) / 100
-    end
-    set_velocity body: shooter, vector: vector * multiplier
+    multiplier = shooter.acceleration
+    additional_vector = vector * multiplier
+    new_vector = shooter.velocity + additional_vector
+    shooter.velocity = new_vector
+    set_velocity body: shooter, vector: shooter.velocity
   end
 
   def handle_clicks

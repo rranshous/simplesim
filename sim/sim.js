@@ -124,6 +124,7 @@ function Sim(engine, world) {
     var body = this.findBody(opts.body_uuid);
     return {
       position: { x: body.position.x, y: body.position.y },
+      velocity: { x: body.velocity.x, y: body.velocity.y },
       rotation: body.angle,
       body_uuid: body.uuid,
       width: body.width,

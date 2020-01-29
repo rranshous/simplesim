@@ -91,11 +91,14 @@ class Game
   def update_bodies
     sim_client.list_details.each do |details|
       body_uuid = details['body_uuid']
-      body = bodies.find { |b| b.uuid == body_uuid } # TODO: dont scan
+      body = get_body(uuid: body_uuid)
       next if body.nil?
       x, y = details['position']['x'], details['position']['y']
       loc = Location.new(x: x, y: y)
+      velocity = Vector.new x: details['velocity']['x'],
+                            y: details['velocity']['y']
       body.location = loc
+      body.velocity = velocity
       body.rotation = details['rotation']
       body.width    = details['width']
       body.height   = details['height']
@@ -103,9 +106,7 @@ class Game
   end
 
   def get_body uuid: nil
-    search_body = Body.new
-    search_body.uuid = uuid
-    self.bodies.find(search_body)
+    bodies.find { |b| b.uuid == uuid } # TODO: dont scan
   end
 
   def draw_bodies
@@ -157,7 +158,8 @@ end
 class Body
   extend Forwardable
 
-  attr_accessor :location, :rotation, :uuid, :width, :height
+  attr_accessor :location, :rotation, :uuid, :width, :height,
+                :velocity
   def_delegators :@location, :x, :y,
                              :distance_to, :angle_to, :vector_to
 
@@ -179,6 +181,22 @@ class Body
 
   def == other
     self.uuid == other.uuid
+  end
+
+  def absolute_up distance: 1
+    Vector.new(y: distance)
+  end
+
+  def absolute_down distance: 1
+    Vector.new(y: -1 * distance)
+  end
+
+  def absolute_left distance: 1
+    Vector.new(x: -1 * distance)
+  end
+
+  def absolute_right distance: 1
+    Vector.new(x: distance)
   end
 
   def ahead distance: 1

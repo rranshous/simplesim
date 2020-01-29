@@ -206,7 +206,7 @@ end
 class Position
   attr_accessor :x, :y
 
-  def initialize x: 0, y: 0
+  def initialize x: 0, y: 0, **_
     self.x, self.y = x, y
   end
 
@@ -268,5 +268,67 @@ class Vector < Position
     else
       self.class.new(x: self.x * other, y: self.y * other)
     end
+  end
+end
+
+class CappedVector < Vector
+  attr_accessor :max_x, :max_y
+
+  def initialize max_x: nil, max_y: nil, **_
+    super
+    self.max_x = max_x
+    self.max_y = max_y
+  end
+
+  def x= val
+    if max_x
+      puts "max_x: #{max_x}; x: #{val}"
+      @x = [val, max_x].min
+      puts "@x: #{@x}"
+    else
+      @x = val
+    end
+  end
+
+  def y= val
+    if max_y
+      @y = [val, max_y].min
+    else
+      @y = val
+    end
+  end
+
+  def max_x= val
+    puts "assigning max_x [#{self.max_x}]: #{val}"
+    @max_x = val
+    puts "resetting x: #{self.x}"
+    self.x = self.x
+  end
+
+  def max_y= val
+    @max_y = val
+    self.y = self.y
+  end
+
+  def + other
+    puts "adding #{self} to #{other}"
+    new_vector = super
+    new_vector.max_x = self.max_x
+    new_vector.max_y = self.max_y
+    new_vector
+  end
+
+  def - other
+    new_vector = super
+    new_vector.max_x = self.max_x
+    new_vector.max_y = self.max_y
+    new_vector
+  end
+
+  def * other
+    new_vector = super
+    new_vector.max_x = self.max_x
+    new_vector.max_y = self.max_y
+    new_vector
   end
 end
