@@ -73,9 +73,18 @@ class Game
     bullets << bullet
   end
 
+  def update_shooter_details
+    update_shooter_rotation
+    update_shooter_velocity
+  end
+
   def update_shooter_rotation
     set_rotation body: shooter,
                  rotation: shooter.angle_to(mouse_pos)
+  end
+
+  def update_shooter_velocity
+    set_velocity body: shooter, vector: shooter.velocity
   end
 
   def handle_keypresses
@@ -87,12 +96,7 @@ class Game
   end
 
   def handle_shooter_move direction
-    vector = shooter.send(direction)
-    multiplier = shooter.acceleration
-    additional_vector = vector * multiplier
-    new_vector = shooter.velocity + additional_vector
-    shooter.velocity = new_vector
-    set_velocity body: shooter, vector: shooter.velocity
+    shooter.velocity += shooter.send(direction) * shooter.acceleration
   end
 
   def handle_clicks
@@ -123,4 +127,5 @@ game.run do
   game.handle_collisions
   game.reap_bullets
   game.update_shooter_rotation
+  game.update_shooter_velocity
 end

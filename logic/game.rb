@@ -93,8 +93,8 @@ class Game
       body_uuid = details['body_uuid']
       body = get_body(uuid: body_uuid)
       next if body.nil?
-      x, y = details['position']['x'], details['position']['y']
-      loc = Location.new(x: x, y: y)
+      loc = Location.new x: details['position']['x'],
+                         y: details['position']['y']
       velocity = Vector.new x: details['velocity']['x'],
                             y: details['velocity']['y']
       body.location = loc

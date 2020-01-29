@@ -282,9 +282,7 @@ class CappedVector < Vector
 
   def x= val
     if max_x
-      puts "max_x: #{max_x}; x: #{val}"
       @x = [val, max_x].min
-      puts "@x: #{@x}"
     else
       @x = val
     end
@@ -299,9 +297,7 @@ class CappedVector < Vector
   end
 
   def max_x= val
-    puts "assigning max_x [#{self.max_x}]: #{val}"
     @max_x = val
-    puts "resetting x: #{self.x}"
     self.x = self.x
   end
 
@@ -311,7 +307,6 @@ class CappedVector < Vector
   end
 
   def + other
-    puts "adding #{self} to #{other}"
     new_vector = super
     new_vector.max_x = self.max_x
     new_vector.max_y = self.max_y
