@@ -41,12 +41,15 @@ function Sim(engine, world) {
         friction    = opts.friction,
         restitution = opts.restitution,
         position    = opts.position,
-        static      = opts.static;
+        static      = opts.static,
+        frictionAir = opts.frictionAir,
+        frictionStatic = opts.frictionStatic;
 
     var body = Bodies.rectangle(
       position.x, position.y, width, height,
-      { isStatic: static, density: density, friction: friction,
-        restitution: restitution }
+      { isStatic: static, density: density,
+        friction: friction, frictionAir: frictionAir,
+        frictionStatic: frictionStatic, restitution: restitution }
     );
 
     body.width = width;
@@ -218,16 +221,18 @@ function Commander(sim) {
   };
 
   this.add_rectangle = function(opts) {
-    var body_uuid = this.sim.addRectangle({
-      width:       opts.width,
-      height:      opts.height,
-      static:      opts.static,
-      density:     opts.density || 0.05,
-      friction:    opts.friction || 0.01,
-      restitution: opts.restitution || 0.01,
-      //frictionAir: 0.001,
-      position:    { x: opts.position.x, y: opts.position.y },
-    });
+    let args = {
+      width:          opts.width,
+      height:         opts.height,
+      static:         opts.static,
+      density:        opts.density || 0.05,
+      friction:       opts.friction || 0.01,
+      restitution:    opts.restitution || 0.01,
+      frictionAir:    opts.frictionAir || 0.01,
+      frictionStatic: opts.frictionStatic || 0.5,
+      position:       { x: opts.position.x, y: opts.position.y },
+    }
+    var body_uuid = this.sim.addRectangle(args);
     return { body_uuid: body_uuid };
   };
 

@@ -192,9 +192,18 @@ class VisClient < BatcherClient
 end
 
 class SimClient < Client
+  def collisions
+    tick_response_field(:collisions)
+  end
+
+  private
+
+  def tick_response_field field, default: []
+    (self.tick_response || {})[field.to_s] || default
+  end
 end
 
-class Location
+class Position
   attr_accessor :x, :y
 
   def initialize x: 0, y: 0
@@ -213,6 +222,13 @@ class Location
     return false unless other.respond_to?(:x) && other.respond_to(:y)
     self.x == other.x && self.y == other.y
   end
+
+  def to_s
+    "<#{self.class} #{x}:#{y}>"
+  end
+end
+
+class Location < Position
 
   def distance_to other
     sum = 0
@@ -239,15 +255,14 @@ class Location
   def offset_of other
     other - self
   end
-
-  def to_s
-    "<#{self.class} #{x}:#{y}>"
-  end
 end
 
 class Vector < Location
-
   def scale scalar
     Vector.new(x: self.x * scalar, y: self.y * scalar)
+  end
+
+  def * other
+    self.class.new(x: self.x * other.x, y: self.y * other.y)
   end
 end

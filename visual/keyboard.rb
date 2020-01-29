@@ -62,7 +62,9 @@ class KeyboardInterpreter
       left:            [:left, "a"],
       right:           [:right, "d"],
       rotate_right:    ["e"],
-      rotate_left:     ["q"] }
+      rotate_left:     ["q"],
+      jump:            [:space, " "]
+    }
   end
 end
 

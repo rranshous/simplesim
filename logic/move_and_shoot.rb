@@ -127,6 +127,7 @@ loop do
     )
     x = pos['x'] - shooter_loc.x
     y = pos['y'] - shooter_loc.y
+    puts "velocity: #{x/20.0}/#{y/20.0}"
     sim_client.set_velocity(r['body_uuid'], x / 20.0, y / 20.0)
     vis_client.set_color(r['body_uuid'], :red)
     destroyers.push(r['body_uuid'])

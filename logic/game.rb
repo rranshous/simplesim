@@ -16,7 +16,7 @@ class Game
   def_delegators :@vis_client, :clicks, :keypresses, :mouse_pos
 
   def initialize
-    self.bodies = []
+    self.bodies = BodyCollection.new
     init_clients
     init_game
     init_attrs
@@ -52,11 +52,15 @@ class Game
   end
 
   def add_body body: nil, **kwargs
-    opts = { width: 10, height: 10, density: 0.1, static: false, friction: 0.1 }
+    opts = { width: body.width || 10, height: body.height || 10,
+             density: 0.1, static: false,
+             friction: 0.01, frictionAir: 0.01, frictionStatic: 0.5 }
     opts.merge!(kwargs)
     r = sim_client.add_rectangle(
       body.location, opts[:width], opts[:height],
-      { density: opts[:density], friction: opts[:friction], static: opts[:static] }
+      { density: opts[:density], friction: opts[:friction],
+        frictionAir: opts[:frictionAir], static: opts[:static],
+        frictionStatic: opts[:frictionStatic]}
     )
     vis_client.add_rectangle(
       body.location, opts[:width], opts[:height],
@@ -87,6 +91,12 @@ class Game
     end
   end
 
+  def get_body uuid: nil
+    search_body = Body.new
+    search_body.uuid = uuid
+    self.bodies.find(search_body)
+  end
+
   def draw_bodies
     bodies.each do |body|
       vis_client.set_position(body.uuid, body.location)
@@ -110,12 +120,24 @@ class Game
     sim_client.set_position(body.uuid, position)
   end
 
+  def set_velocity body: nil, vector: nil
+    sim_client.set_velocity(body.uuid, vector.x, vector.y)
+  end
+
   def run &blk
     loop do
       blk.call(self.last_step_time || 0)
       tick
       update_bodies
       draw_bodies
+    end
+  end
+
+  def collisions
+    self.sim_client.collisions.map do |collision|
+      collision['pair'].map do |uuid|
+        self.get_body(uuid: uuid)
+      end
     end
   end
 end
