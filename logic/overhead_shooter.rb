@@ -2,10 +2,13 @@ require_relative 'client'
 require_relative 'game'
 
 class Shooter < Body
+  attr_accessor :speed
+
   def init_attrs
     self.location = Location.new(x: 0, y: 0)
     self.width = 20
     self.height = 20
+    self.speed = 1
   end
 end
 
@@ -15,7 +18,7 @@ class Bullet < Body
   def init_attrs
     self.width = 5
     self.height = 5
-    self.speed = 1
+    self.speed = 3
     self.density = 0.8
     self.friction = 0.001
   end
@@ -58,10 +61,19 @@ class Game
   def handle_keypresses
     keypresses.each do |key|
       if KEY_DIRECTIONS.include? key
-        push body: shooter, direction: KEY_DIRECTIONS[key],
-             magnitude: 1000
+        handle_shooter_move KEY_DIRECTIONS[key]
       end
     end
+  end
+
+  def handle_shooter_move direction
+    return if mouse_pos.distance_to(shooter) < 20
+    vector = shooter.send(direction)
+    multiplier = shooter.speed
+    if mouse_pos.distance_to(shooter) < shooter.width * 3
+      multiplier *= shooter.distance_to(mouse_pos) / 100
+    end
+    set_velocity body: shooter, vector: vector * multiplier
   end
 
   def handle_clicks

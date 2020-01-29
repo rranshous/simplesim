@@ -181,7 +181,7 @@ class Body
     self.uuid == other.uuid
   end
 
-  def ahead distance: 100
+  def ahead distance: 1
     relative_location offset: Location.new(x: distance)
   end
 
@@ -189,7 +189,7 @@ class Body
     self.location.vector_to(ahead)
   end
 
-  def behind distance: 100
+  def behind distance: 1
     relative_location offset: Location.new(x: -1 * distance)
   end
 
@@ -197,7 +197,7 @@ class Body
     self.location.vector_to(behind)
   end
 
-  def left distance: 100
+  def left distance: 1
     relative_location offset: Location.new(y: distance)
   end
 
@@ -205,7 +205,7 @@ class Body
     self.location.vector_to(left)
   end
 
-  def right distance: 100
+  def right distance: 1
     relative_location offset: Location.new(y: -1 * distance)
   end
 

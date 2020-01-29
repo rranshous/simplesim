@@ -257,12 +257,16 @@ class Location < Position
   end
 end
 
-class Vector < Location
+class Vector < Position
   def scale scalar
     Vector.new(x: self.x * scalar, y: self.y * scalar)
   end
 
   def * other
-    self.class.new(x: self.x * other.x, y: self.y * other.y)
+    if other.respond_to?(:x)
+      self.class.new(x: self.x * other.x, y: self.y * other.y)
+    else
+      self.class.new(x: self.x * other, y: self.y * other)
+    end
   end
 end
