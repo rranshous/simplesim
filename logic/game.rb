@@ -148,9 +148,41 @@ class Body
     self.uuid == other.uuid
   end
 
-  def ahead
-    x = self.x + 100
-    y = self.y
+  def ahead distance: 100
+    relative_location offset: Location.new(x: distance)
+  end
+
+  def forward
+    self.location.vector_to(ahead)
+  end
+
+  def behind distance: 100
+    relative_location offset: Location.new(x: -1 * distance)
+  end
+
+  def backward
+    self.location.vector_to(behind)
+  end
+
+  def left distance: 100
+    relative_location offset: Location.new(y: distance)
+  end
+
+  def leftward
+    self.location.vector_to(left)
+  end
+
+  def right distance: 100
+    relative_location offset: Location.new(y: -1 * distance)
+  end
+
+  def rightward
+    self.location.vector_to(right)
+  end
+
+  def relative_location offset: Location.new
+    x = self.x + offset.x
+    y = self.y + offset.y
     cos = Math.cos(rotation)
     sin = Math.sin(rotation)
     x2 = x - self.x
@@ -158,58 +190,6 @@ class Body
     xf = x2 * cos - y2 * sin + self.x
     yf = x2 * sin + y2 * cos + self.y
     Location.new(x: xf, y: yf)
-  end
-
-  def forward
-    self.location.vector_to(ahead)
-  end
-
-  def behind
-    x = self.x - 100
-    y = self.y
-    cos = Math.cos(rotation)
-    sin = Math.sin(rotation)
-    x2 = x - self.x
-    y2 = y - self.y
-    xf = x2 * cos - y2 * sin + self.x
-    yf = x2 * sin + y2 * cos + self.y
-    Vector.new(x: xf, y: yf)
-  end
-
-  def backward
-    self.location.vector_to(behind)
-  end
-
-  def left
-    x = self.x
-    y = self.y + 100
-    cos = Math.cos(rotation)
-    sin = Math.sin(rotation)
-    x2 = x - self.x
-    y2 = y - self.y
-    xf = x2 * cos - y2 * sin + self.x
-    yf = x2 * sin + y2 * cos + self.y
-    Vector.new(x: xf, y: yf)
-  end
-
-  def leftward
-    self.location.vector_to(left)
-  end
-
-  def right
-    x = self.x
-    y = self.y - 100
-    cos = Math.cos(rotation)
-    sin = Math.sin(rotation)
-    x2 = x - self.x
-    y2 = y - self.y
-    xf = x2 * cos - y2 * sin + self.x
-    yf = x2 * sin + y2 * cos + self.y
-    Vector.new(x: xf, y: yf)
-  end
-
-  def rightward
-    self.location.vector_to(right)
   end
 
   def to_s
