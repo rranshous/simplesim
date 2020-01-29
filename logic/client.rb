@@ -206,7 +206,7 @@ end
 class Position
   attr_accessor :x, :y
 
-  def initialize x: 0, y: 0, **_
+  def initialize x: 0, y: 0
     self.x, self.y = x, y
   end
 
@@ -272,17 +272,12 @@ class Vector < Position
 end
 
 class CappedVector < Vector
-  attr_accessor :max_x, :max_y
-
-  def initialize max_x: nil, max_y: nil, **_
-    super
-    self.max_x = max_x
-    self.max_y = max_y
-  end
+  attr_reader :max_x, :max_y
 
   def x= val
     if max_x
       @x = [val, max_x].min
+      @x = [@x, -1 * max_x].max
     else
       @x = val
     end
@@ -291,6 +286,7 @@ class CappedVector < Vector
   def y= val
     if max_y
       @y = [val, max_y].min
+      @y = [@y, -1 * max_y].max
     else
       @y = val
     end

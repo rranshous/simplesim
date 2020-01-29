@@ -1,6 +1,22 @@
 require_relative 'client'
 require_relative 'game'
 
+module MaxSpeeder
+  def velocity= other
+    @velocity = new_capped_vector
+    self.velocity.x = other.x
+    self.velocity.y = other.y
+    self.velocity
+  end
+
+  def new_capped_vector
+    vector = CappedVector.new
+    vector.max_x = max_speed
+    vector.max_y = max_speed
+    vector
+  end
+end
+
 class Body
   def survive_collision? body: nil
     true
@@ -14,7 +30,28 @@ class Wall < Body
   end
 end
 
+class Baddy < Body
+  include MaxSpeeder
+
+  attr_accessor :max_speed
+
+  def init_attrs
+    self.color = 'blue'
+    self.width = 10
+    self.height = 7
+    self.max_speed = 0.3
+  end
+
+  def survive_collision? body: nil
+    return false if body.is_a?(Bullet)
+    return false if body.is_a?(Shooter)
+    return true
+  end
+end
+
 class Shooter < Body
+  include MaxSpeeder
+
   attr_accessor :max_speed, :acceleration
 
   def init_attrs
@@ -23,19 +60,12 @@ class Shooter < Body
     self.height = 20
     self.max_speed = 0.8
     self.acceleration = 0.05
-    self.velocity = new_capped_vector
+    self.velocity = Vector.new(x: 0, y: 0)
   end
 
-  def velocity= other
-    @velocity = new_capped_vector
-    self.velocity.x = other.x
-    self.velocity.y = other.y
-    self.velocity
-  end
-
-  def new_capped_vector
-    CappedVector.new max_x: self.max_speed,
-                     max_y: self.max_speed
+  def survive_collision? body: nil
+    #return false if body.is_a?(Baddy)
+    return true
   end
 end
 
@@ -71,11 +101,13 @@ class Game
     'd' => 'absolute_right',
   }
 
-  attr_accessor :shooter, :walls
+  attr_accessor :shooter, :walls, :baddies, :max_baddies
 
   def init_attrs
     self.shooter = Shooter.new
     self.walls = BodyCollection.new
+    self.baddies = BodyCollection.new
+    self.max_baddies = 10
     add_body body: shooter
     add_walls
   end
@@ -87,6 +119,24 @@ class Game
     self.walls << Wall.new(location: Location.new(x: 400, y: 0))
     self.add_bodies bodies: self.walls[0..1], width: 800, height: 100
     self.add_bodies bodies: self.walls[2..3], width: 100, height: 800
+  end
+
+  def fill_baddies
+    (max_baddies - baddies.length).times do
+      add_baddy
+    end
+  end
+
+  def add_baddy
+    baddy = Baddy.new
+    loop do
+      baddy.location = Location.new x: rand(-350..350),
+                                    y: rand(-350..350)
+      distance = shooter.location.distance_to(baddy.location)
+      break if distance > 50
+    end
+    add_body body: baddy
+    self.baddies << baddy
   end
 
   def fire_bullet
@@ -110,6 +160,17 @@ class Game
 
   def update_shooter_velocity
     set_velocity body: shooter, vector: shooter.velocity
+  end
+
+  def update_baddies
+    fill_baddies
+    baddies.each do |baddy|
+      baddy.velocity = baddy.vector_to(shooter.location)
+      set_rotation body: baddy,
+                   rotation: baddy.angle_to(shooter.location)
+      set_velocity body: baddy,
+                   vector: baddy.velocity
+    end
   end
 
   def handle_keypresses
@@ -137,10 +198,15 @@ class Game
     collisions.each do |collidors|
       collidors.compact.permutation(2).each do |body1, body2|
         if !body1.survive_collision? body: body2
-          remove_body body: body1
+          handle_collision body: body1
         end
       end
     end
+  end
+
+  def handle_collision body: nil
+    remove_body body: body
+    baddies.delete(body) if body.is_a?(Baddy)
   end
 end
 
@@ -151,4 +217,5 @@ game.run do
   game.handle_collisions
   game.update_shooter_rotation
   game.update_shooter_velocity
+  game.update_baddies
 end
