@@ -11,11 +11,10 @@ end
 sim_client = Client.new(socket_path: '/tmp/sim.sock')
 sim_client.connect
 
-vis_client = Client.new(socket_path: '/tmp/vis.sock')
-vis_client.extend(Batcher)
+vis_client = BatcherClient.new(socket_path: '/tmp/vis.sock')
 vis_client.connect
 
-sim_client.set_gravity(0, 0.02)
+sim_client.set_gravity(0, 0)
 
 destroyers = []
 perminants = []
@@ -106,8 +105,7 @@ loop do
     end
   end
   vis_client.tick step_ms
-  r = vis_client.send_batch
-  vis_updates = r.last
+  vis_updates = vis_client.tick_response
   mouse_pos = vis_updates['mouse_pos']
   mouse_offset = [ mouse_pos['x'] - shooter_loc.x,
                    mouse_pos['y'] - shooter_loc.y ]

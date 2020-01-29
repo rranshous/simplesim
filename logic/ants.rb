@@ -9,7 +9,8 @@ def log msg
   STDERR.write "#{msg}\n"
 end
 
-GEN_SIZE = 20
+GEN_SIZE = 30
+FOOD_SIZE = (GEN_SIZE * 0.5).to_i
 BRAIN_FACTORY = BrainFactory.new(input_layer_size: 4,
                                  output_layer_size: 4)
 
@@ -253,9 +254,11 @@ game.walls << Wall.new(location: Location.new(x: 0, y: -400))
 game.walls << Wall.new(location: Location.new(x: -400, y: 0))
 game.walls << Wall.new(location: Location.new(x: 400, y: 0))
 game.hills << Body.new(location: CENTER.dup)
-50.times do
+
+FOOD_SIZE.times do
   game.add_food
 end
+
 GEN_SIZE.times do
   game.add_ant
 end
@@ -269,8 +272,6 @@ generation_delta_count = 0
 game.run do |step_delta|
   tick_delta_count += step_delta
   generation_delta_count += step_delta
-  game.update_bodies
-  game.draw_bodies
   if tick_delta_count >= 100
     game.tick_ants
     tick_delta_count = tick_delta_count % 100

@@ -118,13 +118,6 @@ controller.clicks = []
 controller.mouse_pos = OpenStruct.new(x: 0, y: 0)
 controller.keypresses = []
 
-def timecheck(label)
-  s = Time.now.to_f
-  r = yield
-  puts "#{label}: #{Time.now.to_f - s}"
-  r
-end
-
 Thread.new do
   loop do
     begin

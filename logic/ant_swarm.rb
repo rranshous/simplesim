@@ -9,8 +9,8 @@ def log msg
   STDERR.write "#{msg}\n"
 end
 
-GEN_SIZE = 10
-FOOD_SIZE = GEN_SIZE * 2
+GEN_SIZE = 30
+FOOD_SIZE = (GEN_SIZE * 0.5).to_i
 BRAIN_FACTORY = BrainFactory.new(input_layer_size: 4,
                                  output_layer_size: 4)
 
@@ -189,7 +189,6 @@ class Game
         ant.energy = ant.energy - ant.start_energy_level
       end
     end
-    replenish_population
   end
 
   def add_ant ant: nil, color: :black
@@ -252,8 +251,6 @@ game.add_bodies bodies: game.walls[2..3], static: true, width: 100, height: 800
 tick_delta_count = 0
 game.run do |step_delta|
   tick_delta_count += step_delta
-  game.update_bodies
-  game.draw_bodies
   if tick_delta_count >= 100
     game.tick_ants
     tick_delta_count = tick_delta_count % 100

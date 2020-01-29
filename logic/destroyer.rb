@@ -6,8 +6,7 @@ MAX_TICK_MS = 30
 sim_client = Client.new(socket_path: '/tmp/sim.sock')
 sim_client.connect
 
-vis_client = Client.new(socket_path: '/tmp/vis.sock')
-vis_client.extend(Batcher)
+vis_client = BatcherClient.new(socket_path: '/tmp/vis.sock')
 vis_client.connect
 
 sim_client.set_gravity(0, 0.1)
@@ -67,8 +66,7 @@ loop do
     end
   end
   vis_client.tick step_ms
-  r = vis_client.send_batch
-  vis_updates = r.last
+  vis_updates = vis_client.tick_response
   clicks = vis_updates['clicks']
   clicks.each do |pos|
     r = sim_client.add_rectangle(

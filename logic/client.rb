@@ -3,7 +3,7 @@ require 'json'
 
 class Client
 
-  attr_accessor :socket_path, :socket
+  attr_accessor :socket_path, :socket, :tick_response
 
   def initialize opts
     self.socket_path = opts[:socket_path]
@@ -24,7 +24,7 @@ class Client
       message: 'tick',
       step_ms: step_ms
     }
-    send_data to_send
+    self.tick_response = send_data to_send
   end
 
   def add_square position, size, opts={}
@@ -136,6 +136,8 @@ end
 
 class BatcherClient < Client
 
+  attr_accessor :tick_response
+
   def tick *args
     super *args
     send_batch
@@ -149,6 +151,7 @@ class BatcherClient < Client
     return if @pending.nil? || @pending.empty?
     to_send = { messages: @pending }
     r = send_data_orig to_send
+    self.tick_response = r.last
     @pending.clear
     return r
   end
@@ -159,6 +162,36 @@ class BatcherClient < Client
     self.socket.flush
     return JSON.parse(self.socket.gets())
   end
+end
+
+class VisClient < BatcherClient
+  def clicks
+    tick_response_field(:clicks).each do |pos|
+      Location.new(x: pos['x'], y: pos['y'])
+    end
+  end
+
+  def keypresses
+    tick_response_field(:keypresses)
+  end
+
+  def mouse_pos
+    pos = tick_response_field(:mouse_pos, default: nil)
+    if pos
+      Location.new(x: pos['x'], y: pos['y'])
+    else
+      Location.new(x: 0, y: 0)
+    end
+  end
+
+  private
+
+  def tick_response_field field, default: []
+    (self.tick_response || {})[field.to_s] || default
+  end
+end
+
+class SimClient < Client
 end
 
 class Location
@@ -213,4 +246,8 @@ class Location
 end
 
 class Vector < Location
+
+  def scale scalar
+    Vector.new(x: self.x * scalar, y: self.y * scalar)
+  end
 end

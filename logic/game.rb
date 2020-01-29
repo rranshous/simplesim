@@ -5,11 +5,15 @@ def log msg
 end
 
 class Game
+  extend Forwardable
 
   FPS = 60
   MAX_TICK_MS = 25
 
-  attr_accessor :vis_client, :sim_client, :last_tick_time, :last_step_time, :bodies
+  attr_accessor :vis_client, :sim_client, :last_tick_time, :last_step_time,
+                :bodies, :clicks, :keypresses
+
+  def_delegators :@vis_client, :clicks, :keypresses, :mouse_pos
 
   def initialize
     self.bodies = []
@@ -23,8 +27,8 @@ class Game
   end
 
   def init_clients
-    self.sim_client = Client.new(socket_path: '/tmp/sim.sock')
-    self.vis_client = BatcherClient.new(socket_path: '/tmp/vis.sock')
+    self.sim_client = SimClient.new(socket_path: '/tmp/sim.sock')
+    self.vis_client = VisClient.new(socket_path: '/tmp/vis.sock')
     self.sim_client.connect
     self.vis_client.connect
   end
@@ -90,8 +94,12 @@ class Game
     end
   end
 
-  def push body: nil, vector: nil
-    sim_client.push body.uuid, vector.x, vector.y
+  def push body: nil, vector: nil, direction: nil
+    if vector
+      sim_client.push body.uuid, vector.x, vector.y
+    elsif direction
+      push body: body, vector: body.send(direction.to_sym).scale(100)
+    end
   end
 
   def set_rotation body: nil, rotation: nil
@@ -106,6 +114,8 @@ class Game
     loop do
       blk.call(self.last_step_time || 0)
       tick
+      update_bodies
+      draw_bodies
     end
   end
 end
@@ -115,7 +125,8 @@ class Body
   extend Forwardable
 
   attr_accessor :location, :rotation, :uuid, :width, :height
-  def_delegators :@location, :x, :y, :distance_to
+  def_delegators :@location, :x, :y,
+                             :distance_to, :angle_to, :vector_to
 
   def initialize location: nil
     self.location = location
@@ -135,6 +146,70 @@ class Body
 
   def == other
     self.uuid == other.uuid
+  end
+
+  def ahead
+    x = self.x + 100
+    y = self.y
+    cos = Math.cos(rotation)
+    sin = Math.sin(rotation)
+    x2 = x - self.x
+    y2 = y - self.y
+    xf = x2 * cos - y2 * sin + self.x
+    yf = x2 * sin + y2 * cos + self.y
+    Location.new(x: xf, y: yf)
+  end
+
+  def forward
+    self.location.vector_to(ahead)
+  end
+
+  def behind
+    x = self.x - 100
+    y = self.y
+    cos = Math.cos(rotation)
+    sin = Math.sin(rotation)
+    x2 = x - self.x
+    y2 = y - self.y
+    xf = x2 * cos - y2 * sin + self.x
+    yf = x2 * sin + y2 * cos + self.y
+    Vector.new(x: xf, y: yf)
+  end
+
+  def backward
+    self.location.vector_to(behind)
+  end
+
+  def left
+    x = self.x
+    y = self.y + 100
+    cos = Math.cos(rotation)
+    sin = Math.sin(rotation)
+    x2 = x - self.x
+    y2 = y - self.y
+    xf = x2 * cos - y2 * sin + self.x
+    yf = x2 * sin + y2 * cos + self.y
+    Vector.new(x: xf, y: yf)
+  end
+
+  def leftward
+    self.location.vector_to(left)
+  end
+
+  def right
+    x = self.x
+    y = self.y - 100
+    cos = Math.cos(rotation)
+    sin = Math.sin(rotation)
+    x2 = x - self.x
+    y2 = y - self.y
+    xf = x2 * cos - y2 * sin + self.x
+    yf = x2 * sin + y2 * cos + self.y
+    Vector.new(x: xf, y: yf)
+  end
+
+  def rightward
+    self.location.vector_to(right)
   end
 
   def to_s

@@ -6,8 +6,7 @@ MAX_TICK_MS = 30
 sim_client = Client.new(socket_path: '/tmp/sim.sock')
 sim_client.connect
 
-vis_client = Client.new(socket_path: '/tmp/vis.sock')
-vis_client.extend(Batcher)
+vis_client = BatcherClient.new(socket_path: '/tmp/vis.sock')
 vis_client.connect
 
 sim_client.set_gravity(0, 0.1)
@@ -55,8 +54,7 @@ loop do
   r['collisions'].each do |collision|
     puts "collision: #{collision['pair']}"
   end
-  vis_client.tick step_ms
-  r = vis_client.send_batch
+  r = vis_client.tick step_ms
   vis_updates = r.last
   clicks = vis_updates['clicks']
   clicks.each do |pos|
