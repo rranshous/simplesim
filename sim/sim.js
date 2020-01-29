@@ -307,8 +307,9 @@ var collisions = [];
 
 var engine = Engine.create(),
     world  = engine.world;
-engine.positionIterations = 10;
-engine.velocityIterations = 8;
+
+//engine.positionIterations = 10;
+//engine.velocityIterations = 8;
 
 // Events.on(world, 'afterAdd', function(event) {
 // });

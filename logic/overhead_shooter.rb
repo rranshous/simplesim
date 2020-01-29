@@ -47,6 +47,7 @@ class Game
     velocity_vector *= Vector.new x: bullet.speed, y: bullet.speed
     set_velocity body: bullet,
                  vector: velocity_vector
+    bullets << bullet
   end
 
   def update_shooter_rotation
@@ -57,23 +58,29 @@ class Game
   def handle_keypresses
     keypresses.each do |key|
       if KEY_DIRECTIONS.include? key
-        push body: shooter, direction: KEY_DIRECTIONS[key]
-      else
-        if key == ' '
-          fire_bullet
-        end
+        push body: shooter, direction: KEY_DIRECTIONS[key],
+             magnitude: 1000
       end
     end
   end
 
   def handle_clicks
-    clicks.each do |loc|
+    if clicks.length > 0
       fire_bullet
     end
   end
 
   def handle_collisions
     collisions.each do |collidors|
+    end
+  end
+
+  def reap_bullets
+    nearby_bullets = self.bullets.nearby(shooter.location, max_distance: 800)
+    far_away = self.bullets - nearby_bullets
+    far_away.each do |bullet|
+      self.remove_body body: bullet
+      self.bullets.delete bullet
     end
   end
 end
@@ -83,6 +90,6 @@ game.run do
   game.handle_keypresses
   game.handle_clicks
   game.handle_collisions
+  game.reap_bullets
   game.update_shooter_rotation
-  game.tick
 end

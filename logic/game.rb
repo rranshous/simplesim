@@ -4,11 +4,22 @@ def log msg
   STDERR.write "#{msg}\n"
 end
 
+def log_time(label)
+  start = Time.now.to_f
+  r = yield
+  t = Time.now.to_f - start
+  if t < 0.0001
+    t = "~0"
+  end
+  puts "#{label}: #{t}"
+  r
+end
+
 class Game
   extend Forwardable
 
-  FPS = 60
-  MAX_TICK_MS = 25
+  FPS = 30
+  MAX_TICK_MS = 10
 
   attr_accessor :vis_client, :sim_client, :last_tick_time, :last_step_time,
                 :bodies, :clicks, :keypresses
@@ -104,11 +115,11 @@ class Game
     end
   end
 
-  def push body: nil, vector: nil, direction: nil
+  def push body: nil, vector: nil, direction: nil, magnitude: 100
     if vector
       sim_client.push body.uuid, vector.x, vector.y
     elsif direction
-      push body: body, vector: body.send(direction.to_sym).scale(100)
+      push body: body, vector: body.send(direction.to_sym).scale(magnitude)
     end
   end
 
