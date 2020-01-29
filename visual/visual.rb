@@ -55,7 +55,16 @@ class BodyCollection
 end
 
 class Controller
-  attr_accessor :bodies, :clicks, :keypresses, :mouse_pos
+  attr_accessor :bodies, :clicks, :keypresses, :mouse_pos,
+                :pending_updates
+
+  def initialize
+    self.pending_updates = false
+    self.bodies = BodyCollection.new
+    self.clicks = []
+    self.mouse_pos = OpenStruct.new(x: 0, y: 0)
+    self.keypresses = []
+  end
 
   def add opts
     case opts['shape']
@@ -129,10 +138,6 @@ class Controller
 end
 
 controller = Controller.new
-controller.bodies = BodyCollection.new
-controller.clicks = []
-controller.mouse_pos = OpenStruct.new(x: 0, y: 0)
-controller.keypresses = []
 
 Thread.new do
   loop do
@@ -154,6 +159,7 @@ Thread.new do
             r = controller.send data['message'], data
             s.puts JSON.dump(r)
           end
+          controller.pending_updates = true
         end
       end
     rescue => ex
@@ -189,6 +195,7 @@ Shoes.app(width: WINDOW_WIDTH, height: WINDOW_HEIGHT, title: 'test') do
     end
 
     update_bodies = lambda do
+      controller.pending_updates = false
       controller.bodies.each do |body|
         case body.shape
         when :rectangle
@@ -209,9 +216,11 @@ Shoes.app(width: WINDOW_WIDTH, height: WINDOW_HEIGHT, title: 'test') do
     animate(FPS) do |i|
       puts "visual bodies: #{controller.bodies.size}" if i % 100 == 0
       begin
-        clear
         load_keypresses.call()
-        update_bodies.call()
+        if controller.pending_updates
+          clear
+          update_bodies.call()
+        end
       rescue => ex
         puts "EX: #{ex}"
         puts " : #{ex.backtrace}"

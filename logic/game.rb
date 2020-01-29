@@ -20,7 +20,7 @@ class Game
   extend Forwardable
 
   FPS = 30
-  MAX_TICK_MS = 10
+  MAX_TICK_MS = 100
 
   attr_accessor :vis_client, :sim_client, :last_tick_time, :last_step_time,
                 :bodies, :clicks, :keypresses
@@ -65,7 +65,7 @@ class Game
 
   def add_body body: nil, **kwargs
     opts = { width: body.width || 10, height: body.height || 10,
-             density: 0.1, static: false,
+             density: body.density || 0.1, static: body.static || false,
              friction: 0.01, frictionAir: 0.01, frictionStatic: 0.5 }
     opts.merge!(kwargs)
     r = sim_client.add_rectangle(
@@ -79,6 +79,12 @@ class Game
       { body_uuid: r['body_uuid'] }.merge(opts)
     )
     body.uuid = r['body_uuid']
+    if body.color
+      set_color body: body, color: body.color
+    end
+    if body.velocity
+      set_velocity body: body, vector: body.velocity
+    end
     self.bodies << body
     return body
   end
@@ -137,6 +143,10 @@ class Game
     sim_client.set_velocity(body.uuid, vector.x, vector.y)
   end
 
+  def set_color body: nil, color: nil
+    vis_client.set_color body.uuid, color
+  end
+
   def run &blk
     loop do
       blk.call(self.last_step_time || 0)
@@ -160,7 +170,7 @@ class Body
   extend Forwardable
 
   attr_accessor :location, :rotation, :uuid, :width, :height,
-                :velocity
+                :velocity, :color, :density, :static
   def_delegators :@location, :x, :y,
                              :distance_to, :angle_to, :vector_to
 
