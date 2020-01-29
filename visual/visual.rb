@@ -5,6 +5,22 @@ require 'socket'
 require 'securerandom'
 require_relative 'keyboard'
 
+def log msg
+  STDERR.write "#{msg}\n"
+  STDERR.flush
+end
+
+def log_time(label)
+  start = Time.now.to_f
+  r = yield
+  t = (Time.now.to_f - start) * 1000
+  if t < 0.01
+    t = "~0"
+  end
+  log "#{label}: #{t}"
+  r
+end
+
 FPS = 30
 WINDOW_WIDTH = 800
 WINDOW_HEIGHT = 800
@@ -158,7 +174,7 @@ Shoes.app(width: WINDOW_WIDTH, height: WINDOW_HEIGHT, title: 'test') do
         x, y = Controller.to_xy(left, top)
         controller.clicks << { x: x, y: y }
       rescue => ex
-        puts "CEX: #{ex}"
+        log "CEX: #{ex}"
       end
     end
 

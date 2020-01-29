@@ -1,6 +1,8 @@
 require_relative 'client'
 require_relative 'game'
 
+class Wall < Body
+end
 
 class Shooter < Body
   attr_accessor :max_speed, :velocity, :acceleration
@@ -53,12 +55,23 @@ class Game
     'd' => 'absolute_right',
   }
 
-  attr_accessor :shooter, :bullets
+  attr_accessor :shooter, :bullets, :walls
 
   def init_attrs
     self.bullets = BodyCollection.new
     self.shooter = Shooter.new
+    self.walls = BodyCollection.new
     add_body body: shooter
+    add_walls
+  end
+
+  def add_walls
+    self.walls << Wall.new(location: Location.new(x: 0, y: 400))
+    self.walls << Wall.new(location: Location.new(x: 0, y: -400))
+    self.walls << Wall.new(location: Location.new(x: -400, y: 0))
+    self.walls << Wall.new(location: Location.new(x: 400, y: 0))
+    self.add_bodies bodies: self.walls[0..1], static: true, width: 800, height: 100
+    self.add_bodies bodies: self.walls[2..3], static: true, width: 100, height: 800
   end
 
   def fire_bullet

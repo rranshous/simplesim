@@ -2,16 +2,17 @@ require 'forwardable'
 
 def log msg
   STDERR.write "#{msg}\n"
+  STDERR.flush
 end
 
 def log_time(label)
   start = Time.now.to_f
   r = yield
-  t = Time.now.to_f - start
-  if t < 0.0001
+  t = (Time.now.to_f - start) * 1000
+  if t < 0.01
     t = "~0"
   end
-  puts "#{label}: #{t}"
+  log "#{label}: #{t}"
   r
 end
 
