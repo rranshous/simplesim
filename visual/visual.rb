@@ -4,6 +4,7 @@ require 'thread'
 require 'socket'
 require 'securerandom'
 require_relative 'keyboard'
+require_relative 'zoomer'
 
 def log msg
   STDERR.write "#{msg}\n"
@@ -56,7 +57,8 @@ end
 
 class Controller
   attr_accessor :bodies, :clicks, :keypresses, :mouse_pos,
-                :pending_updates
+                :pending_updates, :zoomer,
+                :window_width, :window_height
 
   def initialize
     self.pending_updates = false
@@ -64,6 +66,11 @@ class Controller
     self.clicks = []
     self.mouse_pos = OpenStruct.new(x: 0, y: 0)
     self.keypresses = []
+    self.zoomer = Zoomer.new
+  end
+
+  def zoom el_opts: nil
+    zoomer.zoom el_opts: el_opts, controller: self
   end
 
   def add opts
@@ -85,6 +92,11 @@ class Controller
     body = bodies.get(opts['body_uuid'])
     bodies.remove body
     return { body_uuid: opts['body_uuid'] }
+  end
+
+  def set_viewport opts
+    self.zoomer.zoom_level = opts['zoom_level']
+    return { zoom_level: self.zoomer.zoom_level }
   end
 
   def set_position opts
@@ -138,6 +150,8 @@ class Controller
 end
 
 controller = Controller.new
+controller.window_width = WINDOW_WIDTH
+controller.window_height = WINDOW_HEIGHT
 
 Thread.new do
   loop do
@@ -169,11 +183,12 @@ Thread.new do
   end
 end
 
-Shoes.app(width: WINDOW_WIDTH, height: WINDOW_HEIGHT, title: 'test') do
+Shoes.app(width: controller.window_height,
+          height: controller.window_width,
+          title: 'test') do
   begin
 
     keyboard = Keyboard.new self
-    keyboard_interpreter = KeyboardInterpreter.new keyboard
 
     click do |_button, left, top|
       begin
@@ -189,9 +204,7 @@ Shoes.app(width: WINDOW_WIDTH, height: WINDOW_HEIGHT, title: 'test') do
     end
 
     load_keypresses = lambda do
-      keyboard_interpreter.keypresses.each do |key|
-        controller.keypresses << key
-      end
+      controller.keypresses = keyboard.keys_pressed
     end
 
     update_bodies = lambda do
@@ -201,14 +214,13 @@ Shoes.app(width: WINDOW_WIDTH, height: WINDOW_HEIGHT, title: 'test') do
         when :rectangle
           color = self.send(body.color) rescue body.color
           degrees = Controller.to_deg body.rotation
-          rotate degrees
-          fill color
-          rect({
+          opts = {
             top: body.top, left: body.left,
             width: body.width, height: body.height,
-            center: true
-          })
-          rotate(-degrees)
+            center: true, fill: color, rotate: degrees
+          }
+          zoomed_opts = controller.zoom el_opts: opts
+          rect(zoomed_opts)
         end
       end
     end

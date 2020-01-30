@@ -7,6 +7,10 @@ class Keyboard
     self.keys_down = {}
   end
 
+  def keys_pressed
+    self.keys_down.select { |_,v| v }.keys
+  end
+
   def pressed? key
     self.keys_down[key] == true
   end

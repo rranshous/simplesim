@@ -165,6 +165,15 @@ class BatcherClient < Client
 end
 
 class VisClient < BatcherClient
+
+  def set_viewport zoom_level: 1
+    to_send = {
+      message: 'set_viewport',
+      zoom_level: zoom_level
+    }
+    return send_data to_send
+  end
+
   def clicks
     tick_response_field(:clicks).each do |pos|
       Location.new(x: pos['x'], y: pos['y'])

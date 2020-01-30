@@ -30,6 +30,22 @@ class Wall < Body
   end
 end
 
+class VerticalWall < Wall
+  def init_attrs
+    super
+    self.width = 10
+    self.height = 800
+  end
+end
+
+class HorizontalWall < Wall
+  def init_attrs
+    super
+    self.width = 800
+    self.height = 10
+  end
+end
+
 class Baddy < Body
   include MaxSpeeder
 
@@ -101,11 +117,10 @@ class Game
     'd' => 'absolute_right',
   }
 
-  attr_accessor :shooter, :walls, :baddies, :max_baddies
+  attr_accessor :shooter, :baddies, :max_baddies
 
   def init_attrs
     self.shooter = Shooter.new
-    self.walls = BodyCollection.new
     self.baddies = BodyCollection.new
     self.max_baddies = 10
     add_body body: shooter
@@ -113,30 +128,10 @@ class Game
   end
 
   def add_walls
-    self.walls << Wall.new(location: Location.new(x: 0, y: 400))
-    self.walls << Wall.new(location: Location.new(x: 0, y: -400))
-    self.walls << Wall.new(location: Location.new(x: -400, y: 0))
-    self.walls << Wall.new(location: Location.new(x: 400, y: 0))
-    self.add_bodies bodies: self.walls[0..1], width: 800, height: 100
-    self.add_bodies bodies: self.walls[2..3], width: 100, height: 800
-  end
-
-  def fill_baddies
-    (max_baddies - baddies.length).times do
-      add_baddy
-    end
-  end
-
-  def add_baddy
-    baddy = Baddy.new
-    loop do
-      baddy.location = Location.new x: rand(-350..350),
-                                    y: rand(-350..350)
-      distance = shooter.location.distance_to(baddy.location)
-      break if distance > 50
-    end
-    add_body body: baddy
-    self.baddies << baddy
+    self.add_body body: HorizontalWall.new(location: Location.new(x: 5, y: 400))
+    self.add_body body: HorizontalWall.new(location: Location.new(x: 5, y: -400))
+    self.add_body body: VerticalWall.new(location: Location.new(x: -400, y: 0))
+    self.add_body body: VerticalWall.new(location: Location.new(x: 400, y: 0))
   end
 
   def fire_bullet
@@ -162,10 +157,29 @@ class Game
     set_velocity body: shooter, vector: shooter.velocity
   end
 
+  def fill_baddies
+    (max_baddies - baddies.length).times do
+      add_baddy
+    end
+  end
+
+  def add_baddy
+    baddy = Baddy.new
+    loop do
+      baddy.location = Location.new x: rand(-350..350),
+                                    y: rand(-350..350)
+      distance = shooter.location.distance_to(baddy.location)
+      break if distance > 100
+    end
+    add_body body: baddy
+    self.baddies << baddy
+  end
+
   def update_baddies
     fill_baddies
     baddies.each do |baddy|
       baddy.velocity = baddy.vector_to(shooter.location)
+      # is rotation working?
       set_rotation body: baddy,
                    rotation: baddy.angle_to(shooter.location)
       set_velocity body: baddy,
@@ -180,6 +194,12 @@ class Game
       end
       if key == ' '
         fire_bullet
+      end
+      if key == 'i'
+        set_viewport zoom_level: 1
+      end
+      if key == 'o'
+        set_viewport zoom_level: 2
       end
     end
   end

@@ -147,6 +147,10 @@ class Game
     vis_client.set_color body.uuid, color
   end
 
+  def set_viewport zoom_level: 1
+    vis_client.set_viewport zoom_level: zoom_level
+  end
+
   def run &blk
     loop do
       blk.call(self.last_step_time || 0)
@@ -174,9 +178,15 @@ class Body
   def_delegators :@location, :x, :y,
                              :distance_to, :angle_to, :vector_to
 
-  def initialize location: nil
+  def initialize location: nil, **kwargs
     self.location = location
     self.rotation = 0
+    kwargs.each do |k, v|
+      wk = "#{k}="
+      if self.respond_to? wk
+        self.send(wk, v)
+      end
+    end
     init_attrs
   end
 
