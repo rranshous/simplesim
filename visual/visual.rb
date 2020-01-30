@@ -141,7 +141,10 @@ class Controller
     self.clicks.clear
     prev_keypresses = self.keypresses.dup
     self.keypresses.clear
-    return { mouse_pos: { x: mouse_pos.x, y: mouse_pos.y },
+    unzoomed_mouse_pos = self.zoomer.unzoom pos: mouse_pos,
+                                            controller: self
+    x, y = Controller.to_xy(mouse_pos.x, mouse_pos.y)
+    return { mouse_pos: { x: x, y: y },
              clicks: prev_clicks,
              keypresses: prev_keypresses }
   end
@@ -208,15 +211,14 @@ Shoes.app(width: controller.window_height,
 
     click do |_button, left, top|
       begin
-        x, y = Controller.to_xy(left, top)
-        controller.clicks << { x: x, y: y }
+        controller.clicks << { x: left, y: top }
       rescue => ex
         log "CEX: #{ex}"
       end
     end
 
     motion do |left, top|
-      controller.mouse_pos.x, controller.mouse_pos.y = Controller.to_xy(left, top)
+      controller.mouse_pos.x, controller.mouse_pos.y = left, top
     end
 
     load_keypresses = lambda do
@@ -235,8 +237,8 @@ Shoes.app(width: controller.window_height,
             width: body.width, height: body.height,
             center: true, fill: color, rotate: degrees
           }
-          followed_opts = controller.viewport_follow el_opts: opts
-          zoomed_opts = controller.zoom el_opts: followed_opts
+          #followed_opts = controller.viewport_follow el_opts: opts
+          zoomed_opts = controller.zoom el_opts: opts
           rect(zoomed_opts)
         end
       end
