@@ -117,12 +117,13 @@ class Game
     'd' => 'absolute_right',
   }
 
-  attr_accessor :shooter, :baddies, :max_baddies
+  attr_accessor :shooter, :baddies, :max_baddies, :zoom_level
 
   def init_attrs
     self.shooter = Shooter.new
     self.baddies = BodyCollection.new
     self.max_baddies = 10
+    self.zoom_level = 1
     add_body body: shooter
     add_walls
   end
@@ -196,10 +197,20 @@ class Game
         fire_bullet
       end
       if key == 'i'
-        set_viewport zoom_level: 1
+        self.zoom_level = 1
+        set_viewport zoom_level: self.zoom_level
       end
       if key == 'o'
-        set_viewport zoom_level: 2
+        self.zoom_level = 2
+        set_viewport zoom_level: self.zoom_level
+      end
+      if key == 'k'
+        set_viewport zoom_level: self.zoom_level,
+                     follow: shooter
+      end
+      if key == 'l'
+        set_viewport zoom_level: self.zoom_level,
+                     follow: nil
       end
     end
   end

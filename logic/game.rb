@@ -147,8 +147,10 @@ class Game
     vis_client.set_color body.uuid, color
   end
 
-  def set_viewport zoom_level: 1
-    vis_client.set_viewport zoom_level: zoom_level
+  def set_viewport zoom_level: 1, follow: nil
+    follow_uuid = follow ? follow.uuid : nil
+    vis_client.set_viewport zoom_level: zoom_level,
+                            viewport_leader_uuid: follow_uuid
   end
 
   def run &blk

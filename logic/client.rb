@@ -166,10 +166,11 @@ end
 
 class VisClient < BatcherClient
 
-  def set_viewport zoom_level: 1
+  def set_viewport zoom_level: 1, viewport_leader_uuid: nil
     to_send = {
       message: 'set_viewport',
-      zoom_level: zoom_level
+      zoom_level: zoom_level,
+      viewport_leader_uuid: viewport_leader_uuid
     }
     return send_data to_send
   end

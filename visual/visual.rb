@@ -5,6 +5,7 @@ require 'socket'
 require 'securerandom'
 require_relative 'keyboard'
 require_relative 'zoomer'
+require_relative 'viewport_follower'
 
 def log msg
   STDERR.write "#{msg}\n"
@@ -57,8 +58,8 @@ end
 
 class Controller
   attr_accessor :bodies, :clicks, :keypresses, :mouse_pos,
-                :pending_updates, :zoomer,
-                :window_width, :window_height
+                :pending_updates, :zoomer, :viewport_follower,
+                :window_width, :window_height, :viewport_leader
 
   def initialize
     self.pending_updates = false
@@ -67,10 +68,15 @@ class Controller
     self.mouse_pos = OpenStruct.new(x: 0, y: 0)
     self.keypresses = []
     self.zoomer = Zoomer.new
+    self.viewport_follower = ViewportFollower.new
   end
 
   def zoom el_opts: nil
     zoomer.zoom el_opts: el_opts, controller: self
+  end
+
+  def viewport_follow el_opts: nil
+    viewport_follower.follow el_opts: el_opts, controller: self
   end
 
   def add opts
@@ -96,7 +102,17 @@ class Controller
 
   def set_viewport opts
     self.zoomer.zoom_level = opts['zoom_level']
-    return { zoom_level: self.zoomer.zoom_level }
+    if opts.include? 'viewport_leader_uuid'
+      leader = bodies.get(opts['viewport_leader_uuid'])
+      self.viewport_follower.leader = leader
+    end
+    to_return = { zoom_level: self.zoomer.zoom_level }
+    if self.viewport_follower.leader
+      to_return.merge!({
+        viewport_leader_uuid: self.viewport_follower.leader.body_uuid
+      })
+    end
+    return to_return
   end
 
   def set_position opts
@@ -219,7 +235,8 @@ Shoes.app(width: controller.window_height,
             width: body.width, height: body.height,
             center: true, fill: color, rotate: degrees
           }
-          zoomed_opts = controller.zoom el_opts: opts
+          followed_opts = controller.viewport_follow el_opts: opts
+          zoomed_opts = controller.zoom el_opts: followed_opts
           rect(zoomed_opts)
         end
       end
