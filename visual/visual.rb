@@ -141,8 +141,6 @@ class Controller
     self.clicks.clear
     prev_keypresses = self.keypresses.dup
     self.keypresses.clear
-    unzoomed_mouse_pos = self.zoomer.unzoom pos: mouse_pos,
-                                            controller: self
     x, y = Controller.to_xy(mouse_pos.x, mouse_pos.y)
     return { mouse_pos: { x: x, y: y },
              clicks: prev_clicks,
