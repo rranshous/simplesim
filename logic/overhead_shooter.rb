@@ -117,7 +117,7 @@ class Game
     'd' => 'absolute_right',
   }
 
-  attr_accessor :shooter, :baddies, :max_baddies, :zoom_level
+  attr_accessor :shooter, :baddies, :max_baddies, :zoom_level, :viewport_follow
 
   def init_attrs
     self.shooter = Shooter.new
@@ -198,19 +198,23 @@ class Game
       end
       if key == 'i'
         self.zoom_level = 1
-        set_viewport zoom_level: self.zoom_level
+        set_viewport zoom_level: self.zoom_level,
+                     follow: self.viewport_follow
       end
       if key == 'o'
         self.zoom_level = 2
-        set_viewport zoom_level: self.zoom_level
+        set_viewport zoom_level: self.zoom_level,
+                     follow: self.viewport_follow
       end
       if key == 'k'
+        self.viewport_follow = shooter
         set_viewport zoom_level: self.zoom_level,
-                     follow: shooter
+                     follow: self.viewport_follow
       end
       if key == 'l'
+        self.viewport_follow = nil
         set_viewport zoom_level: self.zoom_level,
-                     follow: nil
+                     follow: self.viewport_follow
       end
     end
   end
