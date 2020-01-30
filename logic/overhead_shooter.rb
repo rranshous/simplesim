@@ -34,14 +34,14 @@ class VerticalWall < Wall
   def init_attrs
     super
     self.width = 10
-    self.height = 800
+    self.height = 1600
   end
 end
 
 class HorizontalWall < Wall
   def init_attrs
     super
-    self.width = 800
+    self.width = 1600
     self.height = 10
   end
 end
@@ -117,31 +117,39 @@ class Game
     'd' => 'absolute_right',
   }
 
-  attr_accessor :shooter, :baddies, :max_baddies, :zoom_level, :viewport_follow
+  attr_accessor :shooter, :baddies, :max_baddies, :zoom_level,
+                :viewport_follow, :last_fire_tick
 
   def init_attrs
     self.shooter = Shooter.new
     self.baddies = BodyCollection.new
     self.max_baddies = 10
     self.zoom_level = 1
+    self.last_fire_tick = 0
+    self.viewport_follow = shooter
     add_body body: shooter
     add_walls
   end
 
   def add_walls
-    self.add_body body: HorizontalWall.new(location: Location.new(x: 5, y: 400))
-    self.add_body body: HorizontalWall.new(location: Location.new(x: 5, y: -400))
-    self.add_body body: VerticalWall.new(location: Location.new(x: -400, y: 0))
-    self.add_body body: VerticalWall.new(location: Location.new(x: 400, y: 0))
+    self.add_body body: HorizontalWall.new(location: Location.new(x: 0, y: 800))
+    self.add_body body: HorizontalWall.new(location: Location.new(x: 0, y: -800))
+    self.add_body body: VerticalWall.new(location: Location.new(x: -800, y: 0))
+    self.add_body body: VerticalWall.new(location: Location.new(x: 800, y: 0))
   end
 
   def fire_bullet
+    if self.last_fire_tick + 10 > self.tick_count
+      return false
+    end
     bullet = Bullet.new
     bullet.location = shooter.ahead distance: shooter.width + 2
     velocity_vector = shooter.location.vector_to(shooter.ahead)
     velocity_vector *= Vector.new x: bullet.speed, y: bullet.speed
     bullet.velocity = velocity_vector
     add_body body: bullet, frictionAir: bullet.friction
+    self.last_fire_tick = self.tick
+    return true
   end
 
   def update_shooter_details
@@ -198,25 +206,22 @@ class Game
       end
       if key == 'i'
         self.zoom_level = 1
-        set_viewport zoom_level: self.zoom_level,
-                     follow: self.viewport_follow
       end
       if key == 'o'
         self.zoom_level = 2
-        set_viewport zoom_level: self.zoom_level,
-                     follow: self.viewport_follow
       end
       if key == 'k'
         self.viewport_follow = shooter
-        set_viewport zoom_level: self.zoom_level,
-                     follow: self.viewport_follow
       end
       if key == 'l'
         self.viewport_follow = nil
-        set_viewport zoom_level: self.zoom_level,
-                     follow: self.viewport_follow
       end
     end
+  end
+
+  def update_viewport
+    set_viewport zoom_level: self.zoom_level,
+                 follow: self.viewport_follow
   end
 
   def handle_shooter_move direction
@@ -253,4 +258,5 @@ game.run do
   game.update_shooter_rotation
   game.update_shooter_velocity
   game.update_baddies
+  game.update_viewport
 end

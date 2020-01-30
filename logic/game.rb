@@ -23,12 +23,14 @@ class Game
   MAX_TICK_MS = 100
 
   attr_accessor :vis_client, :sim_client, :last_tick_time, :last_step_time,
-                :bodies, :clicks, :keypresses
+                :bodies, :clicks, :keypresses,
+                :tick_count
 
   def_delegators :@vis_client, :clicks, :keypresses, :mouse_pos
 
   def initialize
     self.bodies = BodyCollection.new
+    self.tick_count = 0
     init_clients
     init_game
     init_attrs
@@ -56,6 +58,7 @@ class Game
     vis_client.tick step_ms
     self.last_step_time = step_ms
     self.last_tick_time = Time.now
+    self.tick_count += 1
   end
 
   def add_bodies **kwargs
@@ -155,7 +158,7 @@ class Game
 
   def run &blk
     loop do
-      blk.call(self.last_step_time || 0)
+      blk.call(self.tick_count)
       tick
       update_bodies
       draw_bodies
