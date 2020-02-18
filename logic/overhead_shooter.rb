@@ -27,7 +27,6 @@ class Cursor < Body
   def init_attrs
     self.color = 'red'
     self.location = Location.new(x: 0, y: 0)
-    self.collision_category = COLLISION_CATEGORIES[:above]
   end
 end
 
@@ -137,7 +136,7 @@ class Game
     self.last_fire_tick = 0
     self.viewport_follow = shooter
     add_body body: shooter
-    add_body body: mouse_cursor
+    #add_body body: mouse_cursor
     add_walls
   end
 
@@ -275,6 +274,6 @@ game.run do
   game.update_shooter_rotation
   game.update_shooter_velocity
   game.update_baddies
-  game.update_mouse_pointer
+  #game.update_mouse_pointer
   game.update_viewport
 end
