@@ -1,22 +1,6 @@
 require_relative 'client'
 require_relative 'game'
 
-module MaxSpeeder
-  def velocity= other
-    @velocity = new_capped_vector
-    self.velocity.x = other.x
-    self.velocity.y = other.y
-    self.velocity
-  end
-
-  def new_capped_vector
-    vector = CappedVector.new
-    vector.max_x = max_speed
-    vector.max_y = max_speed
-    vector
-  end
-end
-
 class Body
   def survive_collision? body: nil
     true
@@ -54,9 +38,7 @@ class HorizontalWall < Wall
 end
 
 class Baddy < Body
-  include MaxSpeeder
-
-  attr_accessor :max_speed
+  include Mover
 
   def init_attrs
     self.color = 'blue'
@@ -73,9 +55,7 @@ class Baddy < Body
 end
 
 class Shooter < Body
-  include MaxSpeeder
-
-  attr_accessor :max_speed, :acceleration
+  include Mover
 
   def init_attrs
     self.location = Location.new(x: 0, y: 0)
@@ -112,6 +92,8 @@ class Bullet < Body
 end
 
 class Game
+
+  include CollidingBodies
 
   KEY_DIRECTIONS = {
     #'w' => 'forward',
@@ -250,19 +232,12 @@ class Game
     end
   end
 
-  def handle_collisions
-    collisions.each do |collidors|
-      collidors.compact.permutation(2).each do |body1, body2|
-        if !body1.survive_collision? body: body2
-          handle_collision body: body1
-        end
-      end
+  def handle_collision bodies: nil
+    body1, body2 = bodies
+    if !body1.survive_collision? body: body2
+      remove_body body: body1
+      baddies.delete(body1) if body1.is_a?(Baddy)
     end
-  end
-
-  def handle_collision body: nil
-    remove_body body: body
-    baddies.delete(body) if body.is_a?(Baddy)
   end
 end
 
