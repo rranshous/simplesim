@@ -23,6 +23,14 @@ class Body
   end
 end
 
+class Cursor < Body
+  def init_attrs
+    self.color = 'red'
+    self.location = Location.new(x: 0, y: 0)
+    self.collision_category = COLLISION_CATEGORIES[:above]
+  end
+end
+
 class Wall < Body
   def init_attrs
     self.color = 'gray'
@@ -118,16 +126,18 @@ class Game
   }
 
   attr_accessor :shooter, :baddies, :max_baddies, :zoom_level,
-                :viewport_follow, :last_fire_tick
+                :viewport_follow, :last_fire_tick, :mouse_cursor
 
   def init_attrs
     self.shooter = Shooter.new
+    self.mouse_cursor = Cursor.new
     self.baddies = BodyCollection.new
     self.max_baddies = 10
     self.zoom_level = 1
     self.last_fire_tick = 0
     self.viewport_follow = shooter
     add_body body: shooter
+    add_body body: mouse_cursor
     add_walls
   end
 
@@ -160,6 +170,13 @@ class Game
   def update_shooter_rotation
     set_rotation body: shooter,
                  rotation: shooter.angle_to(mouse_pos)
+  end
+
+  def update_mouse_pointer
+    mouse_cursor.location = mouse_pos
+    mouse_cursor.rotation = mouse_cursor.angle_to(mouse_pos)
+    update_position body: mouse_cursor
+    update_rotation body: mouse_cursor
   end
 
   def update_shooter_velocity
@@ -258,5 +275,6 @@ game.run do
   game.update_shooter_rotation
   game.update_shooter_velocity
   game.update_baddies
+  game.update_mouse_pointer
   game.update_viewport
 end

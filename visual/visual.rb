@@ -142,6 +142,8 @@ class Controller
     prev_keypresses = self.keypresses.dup
     self.keypresses.clear
     x, y = Controller.to_xy(mouse_pos.x, mouse_pos.y)
+    #x, y = self.zoomer.unzoom x: x, y: y, controller: self
+    x, y = self.viewport_follower.unfollow x: x, y: y, controller: self
     return { mouse_pos: { x: x, y: y },
              clicks: prev_clicks,
              keypresses: prev_keypresses }
@@ -235,9 +237,9 @@ Shoes.app(width: controller.window_height,
             width: body.width, height: body.height,
             center: true, fill: color, rotate: degrees
           }
-          #followed_opts = controller.viewport_follow el_opts: opts
-          zoomed_opts = controller.zoom el_opts: opts
-          rect(zoomed_opts)
+          followed_opts = controller.viewport_follow el_opts: opts
+          #zoomed_opts = controller.zoom el_opts: opts
+          rect(followed_opts)
         end
       end
     end

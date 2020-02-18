@@ -138,8 +138,16 @@ class Game
     sim_client.set_rotation body.uuid, rotation
   end
 
+  def update_rotation body: nil
+    set_rotation body: body, rotation: body.rotation
+  end
+
   def set_position body: nil, position: nil
     sim_client.set_position(body.uuid, position)
+  end
+
+  def update_position body: nil
+    set_position body: body, position: body.location
   end
 
   def set_velocity body: nil, vector: nil
