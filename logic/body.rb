@@ -120,6 +120,10 @@ module Mover
     game.update_rotation body: self
   end
 
+  def turn_toward game: nil, target: nil
+    turn_to game: game, rotation: angle_to(target.location)
+  end
+
   def go_to game: nil, position: nil
     self.location = position
     game.update_position body: self

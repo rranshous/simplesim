@@ -38,6 +38,10 @@ class AutoGun < Game
     end
   end
 
+  def baddies_near target: nil
+    self.baddies.nearby target.location, max_distance: 100
+  end
+
   def handle_keypresses
     keypresses.each do |key|
       if KEY_DIRECTIONS.include? key
@@ -51,12 +55,12 @@ class AutoGun < Game
   end
 
   def update_gun
-    gun.update_position game: self
+    gun.update game: self
   end
 
   def update_baddies
     baddies.each do |baddy|
-      baddy.update_velocity game: self
+      baddy.update game: self
     end
   end
 end
@@ -95,14 +99,23 @@ class Baddy < Body
     self.color = 'green'
     self.width = 15
     self.height = 15
-    self.max_speed = 0.5
+    self.max_speed = 0.4
     self.acceleration = 0.03
     self.velocity = Vector.new(x: 0, y: 0)
     self.location = Location.new(x: rand(-200..200), y: rand(-200..200))
   end
 
+  def update game: nil
+    update_velocity game: game
+    update_rotation game: game
+  end
+
   def update_velocity game: nil
     go_toward game: game, target: game.shooter
+  end
+
+  def update_rotation game: nil
+    turn_toward game: game, target: game.shooter
   end
 end
 
@@ -113,15 +126,31 @@ class Gun < Body
 
   def init_attrs
     self.location = Location.new(x: 0, y: 0)
-    self.width = 3
+    self.width = 7
     self.height = 3
     self.color = 'blue'
   end
 
+  def update game: nil
+    update_position game: game
+    update_rotation game: game
+  end
+
   def update_position game: nil
     distance = shooter.width + 3
-    self.go_to game: game,
-               position: shooter.ahead(distance: distance)
+    go_to game: game,
+          position: shooter.ahead(distance: distance)
+  end
+
+  def update_rotation game: nil
+    nearby_enemies = game.baddies_near(target: self)
+    if !nearby_enemies.empty?
+      turn_toward game: game,
+                  target: nearby_enemies.first
+    else
+      turn_to game: game,
+              rotation: angle_to(game.shooter.ahead(distance: 100))
+    end
   end
 end
 
