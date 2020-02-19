@@ -16,14 +16,15 @@ class AutoGun < Game
   include CollidingBodies
   include SimpleWalls
 
-  attr_accessor :shooter, :mouse_cursor
+  attr_accessor :shooter, :gun
 
   def init_attrs
     self.shooter = Shooter.new
-    self.mouse_cursor = Cursor.new
     add_body body: self.shooter
-    #add_body body: mouse_cursor
-    #add_walls
+    self.gun = Gun.new
+    add_body body: self.gun
+    self.gun.shooter = self.shooter
+    add_walls
     set_viewport follow: self.shooter
   end
 
@@ -35,14 +36,12 @@ class AutoGun < Game
     end
   end
 
-  def update_mouse_pointer
-    mouse_cursor.location = mouse_pos
-    mouse_cursor.rotation = mouse_cursor.angle_to(mouse_pos)
-    update_position body: mouse_cursor
-  end
-
   def update_shooter
     shooter.update_rotation game: self
+  end
+
+  def update_gun
+    gun.update_position game: self
   end
 end
 
@@ -65,7 +64,6 @@ class Shooter < Body
     self.max_speed = 0.8
     self.acceleration = 0.05
     self.velocity = Vector.new(x: 0, y: 0)
-    #self.gun = Gun.new
   end
 
   def update_rotation game: nil
@@ -74,21 +72,27 @@ class Shooter < Body
 end
 
 class Gun < Body
+  include Mover
+
+  attr_accessor :shooter
+
   def init_attrs
     self.location = Location.new(x: 0, y: 0)
-    self.width = 20
-    self.height = 20
+    self.width = 3
+    self.height = 3
     self.color = 'blue'
   end
 
-  def update_position shooter: nil
-    self.location = shooter.ahead distance: 5
+  def update_position game: nil
+    distance = shooter.width + 3
+    self.go_to game: game,
+               position: shooter.ahead(distance: distance)
   end
 end
 
 game = AutoGun.new
 game.run do
   game.handle_keypresses
-  #game.update_mouse_pointer
   game.update_shooter
+  game.update_gun
 end

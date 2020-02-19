@@ -119,8 +119,12 @@ module Mover
     game.update_rotation body: self
   end
 
+  def go_to game: nil, position: nil
+    self.location = position
+    game.update_position body: self
+  end
+
   def velocity= other
-    @velocity = new_capped_vector
     @velocity = CappedVector.new
     @velocity.max_x = max_speed
     @velocity.max_y = max_speed
@@ -175,9 +179,6 @@ module Mover
 
   def rightward
     self.location.vector_to(right)
-  end
-
-  def new_capped_vector
   end
 end
 
