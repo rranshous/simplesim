@@ -31,13 +31,14 @@ class Game
   def_delegators :@body_mover, :push,
                  :set_rotation, :update_rotation,
                  :set_position, :update_position,
-                 :set_velocity
+                 :set_velocity, :update_velocity
 
   def initialize
     self.bodies = BodyCollection.new
     self.tick_count = 0
+    self.body_mover = BodyMover.new
     init_clients
-    self.body_mover = BodyMover.new sim_client: sim_client
+    self.body_mover.sim_client = sim_client
     init_game
     init_attrs
   end
@@ -185,5 +186,38 @@ module RainbowGenerator
       last_color = color
       c
     end.flatten
+  end
+end
+
+
+class Wall < Body
+  def init_attrs
+    self.color = 'gray'
+    self.static = true
+  end
+end
+
+class VerticalWall < Wall
+  def init_attrs
+    super
+    self.width = 10
+    self.height = 1600
+  end
+end
+
+class HorizontalWall < Wall
+  def init_attrs
+    super
+    self.width = 1600
+    self.height = 10
+  end
+end
+
+module SimpleWalls
+  def add_walls
+    self.add_body body: HorizontalWall.new(location: Location.new(x: 0, y: 400))
+    self.add_body body: HorizontalWall.new(location: Location.new(x: 0, y: -400))
+    self.add_body body: VerticalWall.new(location: Location.new(x: -400, y: 0))
+    self.add_body body: VerticalWall.new(location: Location.new(x: 400, y: 0))
   end
 end

@@ -232,20 +232,21 @@ Shoes.app(width: controller.window_height,
         when :rectangle
           color = self.send(body.color) rescue body.color
           degrees = Controller.to_deg body.rotation
+          rotate(degrees)
           opts = {
             top: body.top, left: body.left,
             width: body.width, height: body.height,
-            center: true, fill: color, rotate: degrees
+            center: true, fill: color
           }
           followed_opts = controller.viewport_follow el_opts: opts
           #zoomed_opts = controller.zoom el_opts: opts
           rect(followed_opts)
+          rotate(-degrees)
         end
       end
     end
 
     animate(FPS) do |i|
-      puts "visual bodies: #{controller.bodies.size}" if i % 100 == 0
       begin
         load_keypresses.call()
         if controller.pending_updates

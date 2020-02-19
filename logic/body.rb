@@ -33,6 +33,10 @@ class BodyMover
   def set_velocity body: nil, vector: nil
     sim_client.set_velocity(body.uuid, vector.x, vector.y)
   end
+
+  def update_velocity body: nil
+    set_velocity body: body, vector: body.velocity
+  end
 end
 
 
@@ -104,6 +108,16 @@ class Body
 end
 
 module Mover
+
+  def push game: nil, direction: nil
+    self.velocity += self.send(direction) * (self.acceleration || 1)
+    game.update_velocity body: self
+  end
+
+  def turn_to game: nil, rotation: nil
+    self.rotation = rotation
+    game.update_rotation body: self
+  end
 
   def velocity= other
     @velocity = new_capped_vector

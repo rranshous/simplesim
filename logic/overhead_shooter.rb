@@ -143,11 +143,6 @@ class Game
     return true
   end
 
-  def update_shooter_details
-    update_shooter_rotation
-    update_shooter_velocity
-  end
-
   def update_shooter_rotation
     set_rotation body: shooter,
                  rotation: shooter.angle_to(mouse_pos)
@@ -158,10 +153,6 @@ class Game
     mouse_cursor.rotation = mouse_cursor.angle_to(mouse_pos)
     update_position body: mouse_cursor
     update_rotation body: mouse_cursor
-  end
-
-  def update_shooter_velocity
-    set_velocity body: shooter, vector: shooter.velocity
   end
 
   def fill_baddies
@@ -223,7 +214,7 @@ class Game
   end
 
   def handle_shooter_move direction
-    shooter.velocity += shooter.send(direction) * shooter.acceleration
+    shooter.push game: self, direction: direction
   end
 
   def handle_clicks
@@ -247,7 +238,6 @@ game.run do
   game.handle_clicks
   game.handle_collisions
   game.update_shooter_rotation
-  game.update_shooter_velocity
   game.update_baddies
   #game.update_mouse_pointer
   game.update_viewport
