@@ -16,7 +16,7 @@ class AutoGun < Game
   include CollidingBodies
   include SimpleWalls
 
-  attr_accessor :shooter, :gun
+  attr_accessor :shooter, :gun, :baddies
 
   def init_attrs
     self.shooter = Shooter.new
@@ -24,8 +24,18 @@ class AutoGun < Game
     self.gun = Gun.new
     add_body body: self.gun
     self.gun.shooter = self.shooter
+    self.baddies = BodyCollection.new
     add_walls
+    add_baddies
     set_viewport follow: self.shooter
+  end
+
+  def add_baddies
+    10.times do
+      baddy = Baddy.new
+      add_body body: baddy
+      self.baddies << baddy
+    end
   end
 
   def handle_keypresses
@@ -43,6 +53,12 @@ class AutoGun < Game
   def update_gun
     gun.update_position game: self
   end
+
+  def update_baddies
+    baddies.each do |baddy|
+      baddy.update_velocity game: self
+    end
+  end
 end
 
 class Cursor < Body
@@ -58,16 +74,35 @@ class Shooter < Body
   attr_accessor :gun
 
   def init_attrs
-    self.location = Location.new(x: 0, y: 0)
+    self.color = 'black'
     self.width = 20
     self.height = 20
     self.max_speed = 0.8
     self.acceleration = 0.05
     self.velocity = Vector.new(x: 0, y: 0)
+    self.location = Location.new(x: 0, y: 0)
   end
 
   def update_rotation game: nil
     turn_to game: game, rotation: self.angle_to(game.mouse_pos)
+  end
+end
+
+class Baddy < Body
+  include Mover
+
+  def init_attrs
+    self.color = 'green'
+    self.width = 15
+    self.height = 15
+    self.max_speed = 0.5
+    self.acceleration = 0.03
+    self.velocity = Vector.new(x: 0, y: 0)
+    self.location = Location.new(x: rand(-200..200), y: rand(-200..200))
+  end
+
+  def update_velocity game: nil
+    go_toward game: game, target: game.shooter
   end
 end
 
@@ -95,4 +130,5 @@ game.run do
   game.handle_keypresses
   game.update_shooter
   game.update_gun
+  game.update_baddies
 end

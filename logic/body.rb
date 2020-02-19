@@ -109,8 +109,9 @@ end
 
 module Mover
 
-  def push game: nil, direction: nil
-    self.velocity += self.send(direction) * (self.acceleration || 1)
+  def push game: nil, direction: nil, vector: nil
+    vector ||= self.send(direction)
+    self.velocity += vector * (self.acceleration || 1)
     game.update_velocity body: self
   end
 
@@ -122,6 +123,10 @@ module Mover
   def go_to game: nil, position: nil
     self.location = position
     game.update_position body: self
+  end
+
+  def go_toward game: nil, target: nil
+    push game: game, vector: vector_to(target.location)
   end
 
   def velocity= other
