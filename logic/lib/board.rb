@@ -6,7 +6,8 @@ class Board
   attr_accessor :game, :bodies
 
   def_delegators :@game, :push, :set_rotation,
-                         :set_position, :set_velocity
+                         :set_position, :set_velocity,
+                         :collisions
 
   def add_body body: nil, type: :misc
     game.register_body body: body

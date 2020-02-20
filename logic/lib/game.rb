@@ -139,6 +139,14 @@ class Game
                             viewport_leader_uuid: follow_uuid
   end
 
+  def collisions
+    sim_client.collisions.map do |collision|
+      collision['pair'].map do |uuid|
+        get_body(uuid: uuid)
+      end
+    end
+  end
+
   def run &blk
     loop do
       blk.call(self.tick_count)
@@ -159,14 +167,6 @@ module CollidingBodies
   end
 
   def handle_collision body: nil
-  end
-
-  def collisions
-    self.sim_client.collisions.map do |collision|
-      collision['pair'].map do |uuid|
-        self.get_body(uuid: uuid)
-      end
-    end
   end
 end
 

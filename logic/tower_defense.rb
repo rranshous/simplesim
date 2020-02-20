@@ -54,6 +54,9 @@ class Bullet < Body
   end
 end
 
+class TowerGame < Game
+end
+
 class TowerBoard < Board
   attr_accessor :player_base, :enemy_base, :player_tower
 
@@ -65,19 +68,21 @@ class TowerBoard < Board
 
   def init_player_base
     self.player_base = PlayerBase.new
-    add_body body: self.player_base
+    add_body body: self.player_base, type: :player_base
   end
 
   def init_enemy_base
     self.enemy_base = EnemyBase.new
     self.enemy_base.location = Location.new(x: 150, y: 320)
-    add_body body: self.enemy_base
+    add_body body: self.enemy_base, type: :enemy_base
   end
 
   def init_player_tower
+    location = self.player_base.absolute_up(distance: 50) +
+               self.player_base.absolute_left(distance: 50)
     self.player_tower = Tower.new
-    self.player_tower.location = self.enemy_base.below(distance: 100)
-    add_body body: self.player_tower
+    self.player_tower.location = location
+    add_body body: self.player_tower, type: :player_tower
   end
 end
 
@@ -136,7 +141,7 @@ class TowerGun
     enemy = nearest_enemy enemies: enemies
     return false unless enemy
     bullet = bullet_class.new
-    bullet.location = tower.above distance: tower.height
+    bullet.location = tower.absolute_up distance: tower.height
     bullet.velocity = tower.vector_to(enemy.location) * bullet_class.speed
     board.add_body body: bullet, type: :bullet
   end
@@ -159,9 +164,34 @@ class BulletReaper
   end
 end
 
+class AttackerShotHandler
+
+  attr_accessor :board, :collisions
+
+  def reap_hit
+    collisions.each do |attacker|
+      board.remove_body body: attacker
+    end
+  end
+end
+
+class CollisionGroup
+  attr_accessor :board, :primary, :secondary
+
+  def each
+    board.collisions.each do |body1, body2|
+      if primary.include?(body1) && secondary.include?(body2)
+        yield body1
+      elsif primary.include?(body2) && secondary.include?(body1)
+        yield body2
+      end
+    end
+  end
+end
+
 body_collections = BodyCollectionLookup.new
 
-game = Game.new
+game = TowerGame.new
 game.bodies = body_collections
 
 board = TowerBoard.new
@@ -189,9 +219,19 @@ tower_gun.board = board
 tower_gun.tower = board.player_tower
 tower_gun.bullet_class = Bullet
 
+bullets = body_collections.collection type: :bullet
 bullet_reaper = BulletReaper.new
-bullet_reaper.bullets = body_collections.collection type: :bullet
+bullet_reaper.bullets = bullets
 bullet_reaper.board = board
+
+attacker_collisions = CollisionGroup.new
+attacker_collisions.board = board
+attacker_collisions.primary = enemy_attackers
+attacker_collisions.secondary = bullets
+
+attacker_shot_handler = AttackerShotHandler.new
+attacker_shot_handler.board = board
+attacker_shot_handler.collisions = attacker_collisions
 
 game.run do |tick|
   if tick % 1000 == 0
@@ -201,5 +241,6 @@ game.run do |tick|
     tower_gun.fire_at_nearest_enemy enemies: enemy_attackers
   end
   enemy_mover.move_toward_target target: board.player_base
+  attacker_shot_handler.reap_hit
   bullet_reaper.reap_stopped
 end

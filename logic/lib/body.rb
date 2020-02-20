@@ -85,28 +85,20 @@ class Body
     self.uuid == other.uuid
   end
 
-  def above distance: 1
-    self.location + absolute_up(distance: distance)
-  end
-
   def absolute_up distance: 1
-    Vector.new(y: distance)
-  end
-
-  def below distance: 1
-    self.location + absolute_down(distance: distance)
+    location + Vector.new(y: distance)
   end
 
   def absolute_down distance: 1
-    Vector.new(y: -1 * distance)
+    location + Vector.new(y: -1 * distance)
   end
 
   def absolute_left distance: 1
-    Vector.new(x: -1 * distance)
+    location + Vector.new(x: -1 * distance)
   end
 
   def absolute_right distance: 1
-    Vector.new(x: distance)
+    location + Vector.new(x: distance)
   end
 
   def relative_location offset: Location.new
@@ -211,6 +203,10 @@ class BodyCollection
     @bodies[uuid]
   end
 
+  def include? body
+    !@bodies[body.uuid].nil?
+  end
+
   def delete body
     @bodies.delete body.uuid
   end
@@ -260,13 +256,20 @@ class BodyCollectionLookup
         return body
       end
     end
-    raise 'body miss'
-    return nil
+    raise "body miss: #{uuid}"
   end
 
   def each
     @collections.values.map(&:to_a).flatten.uniq.each do |body|
       yield body
     end
+  end
+
+  def to_h
+    r = {}
+    each do |b|
+      r[b.uuid] = b
+    end
+    r
   end
 end
