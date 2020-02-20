@@ -1,21 +1,12 @@
 class BodyMover
-  attr_accessor :sim_client
+  extend Forwardable
 
-  def initialize sim_client: nil
-    self.sim_client = sim_client
-  end
+  attr_accessor :board
 
-  def push body: nil, vector: nil,
-           direction: nil, magnitude: 100
-    if vector
-      sim_client.push body.uuid, vector.x, vector.y
-    elsif direction
-      push body: body, vector: body.send(direction.to_sym).scale(magnitude)
-    end
-  end
+  def_delegators :@board, :set_velocity
 
   def set_rotation body: nil, rotation: nil
-    sim_client.set_rotation body.uuid, rotation
+    board.set_rotation body.uuid, rotation
   end
 
   def update_rotation body: nil
@@ -23,22 +14,41 @@ class BodyMover
   end
 
   def set_position body: nil, position: nil
-    sim_client.set_position(body.uuid, position)
+    board.set_position(body.uuid, position)
   end
 
   def update_position body: nil
     set_position body: body, position: body.location
   end
 
-  def set_velocity body: nil, vector: nil
-    sim_client.set_velocity(body.uuid, vector.x, vector.y)
-  end
-
   def update_velocity body: nil
     set_velocity body: body, vector: body.velocity
   end
-end
 
+  def push body: nil, direction: nil, vector: nil
+    vector ||= body.send(direction)
+    body.velocity += vector * (body.acceleration || 1)
+    update_velocity body: body
+  end
+
+  def turn_to body: nil, rotation: nil
+    body.rotation = rotation
+    update_rotation body: body
+  end
+
+  def turn_toward body: nil, target: nil
+    turn_to body: body, rotation: body.angle_to(target.location)
+  end
+
+  def go_to body: nil, position: nil
+    body.location = position
+    update_position body: body
+  end
+
+  def go_toward body: nil, target: nil
+    push body: body, vector: body.vector_to(target.location)
+  end
+end
 
 class Body
   extend Forwardable
@@ -117,30 +127,6 @@ class Body
 end
 
 module Mover
-
-  def push game: nil, direction: nil, vector: nil
-    vector ||= self.send(direction)
-    self.velocity += vector * (self.acceleration || 1)
-    game.update_velocity body: self
-  end
-
-  def turn_to game: nil, rotation: nil
-    self.rotation = rotation
-    game.update_rotation body: self
-  end
-
-  def turn_toward game: nil, target: nil
-    turn_to game: game, rotation: angle_to(target.location)
-  end
-
-  def go_to game: nil, position: nil
-    self.location = position
-    game.update_position body: self
-  end
-
-  def go_toward game: nil, target: nil
-    push game: game, vector: vector_to(target.location)
-  end
 
   def velocity= other
     @velocity = CappedVector.new
@@ -241,5 +227,40 @@ class BodyCollection
     self
       .sort_by    { |b| b.distance_to(target_location) }
       .take_while { |b| b.distance_to(target_location) < max_distance }
+  end
+end
+
+class BodyCollectionLookup
+  include Enumerable
+
+  attr_accessor :collections
+
+  def initialize
+    self.collections = {}
+  end
+
+  def add_body body: nil, type: nil
+    collection(type: type) << body
+  end
+
+  def collection type: nil
+    self.collections[type] ||= BodyCollection.new
+  end
+
+  def get uuid: nil
+    collections.values.each do |collection|
+      body = collection.get uuid
+      if body
+        return body
+      end
+    end
+    raise 'body miss'
+    return nil
+  end
+
+  def each
+    @collections.values.map(&:to_a).flatten.uniq.each do |body|
+      yield body
+    end
   end
 end

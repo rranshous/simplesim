@@ -1,4 +1,5 @@
-require_relative 'game'
+require_relative 'lib/board'
+require_relative 'lib/game'
 
 class Base < Body
   def init_attrs
@@ -52,11 +53,10 @@ class Bullet < Body
   end
 end
 
-class Board < Game
-  attr_accessor :player_base, :enemy_base,
-                :player_tower
+class TowerBoard < Board
+  attr_accessor :player_base, :enemy_base, :player_tower
 
-  def init_attrs
+  def populate_initial
     init_player_base
     init_enemy_base
     init_player_tower
@@ -87,7 +87,7 @@ class Attacker < Body
     self.color = 'yellow'
     self.width = 5
     self.height = 4
-    self.max_speed = 0.4
+    self.max_speed = 0.2
     self.acceleration = 0.03
   end
 end
@@ -101,8 +101,7 @@ class AttackerSpawner
   def spawn_attacker
     attacker = attacker_class.new
     attacker.location = random_nearby
-    board.add_body body: attacker
-    collection << attacker
+    board.add_body body: attacker, type: :enemy_attacker
   end
 
   def random_nearby
@@ -119,12 +118,12 @@ class AttackerSpawner
 end
 
 class AttackerMover
-  attr_accessor :board, :collection
+  attr_accessor :body_mover, :collection
 
   def move_toward_target target: nil
     collection.each do |attacker|
-      attacker.turn_toward game: board, target: target
-      attacker.go_toward game: board, target: target
+      body_mover.turn_toward body: attacker, target: target
+      body_mover.go_toward body: attacker, target: target
     end
   end
 end
@@ -134,10 +133,11 @@ class TowerGun
 
   def fire_at_nearest_enemy enemies: nil
     enemy = nearest_enemy enemies: enemies
+    return false unless enemy
     bullet = bullet_class.new
-    bullet.location = tower.above(distance: tower.height + 1)
+    bullet.location = tower.above distance: tower.height
     bullet.velocity = tower.vector_to(enemy.location) * bullet_class.speed
-    board.add_body body: bullet
+    board.add_body body: bullet, type: :bullet
   end
 
   def nearest_enemy enemies: nil
@@ -145,9 +145,20 @@ class TowerGun
   end
 end
 
-board = Board.new
+body_collections = BodyCollectionLookup.new
 
-enemy_attackers = BodyCollection.new
+game = Game.new
+game.bodies = body_collections
+
+board = TowerBoard.new
+board.game = game
+board.bodies = body_collections
+board.populate_initial
+
+body_mover = BodyMover.new
+body_mover.board = board
+
+enemy_attackers = body_collections.collection type: :enemy_attacker
 
 enemy_spawner = AttackerSpawner.new
 enemy_spawner.board = board
@@ -156,7 +167,7 @@ enemy_spawner.attacker_class = Enemy
 enemy_spawner.collection = enemy_attackers
 
 enemy_mover = AttackerMover.new
-enemy_mover.board = board
+enemy_mover.body_mover = body_mover
 enemy_mover.collection = enemy_attackers
 
 tower_gun = TowerGun.new
@@ -164,7 +175,7 @@ tower_gun.board = board
 tower_gun.tower = board.player_tower
 tower_gun.bullet_class = Bullet
 
-board.run do |tick|
+game.run do |tick|
   if tick % 1000 == 0
     enemy_spawner.spawn_attacker
   end

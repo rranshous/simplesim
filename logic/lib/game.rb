@@ -29,17 +29,12 @@ class Game
                 :tick_count, :body_mover
 
   def_delegators :@vis_client, :clicks, :keypresses, :mouse_pos
-  def_delegators :@body_mover, :push,
-                 :set_rotation, :update_rotation,
-                 :set_position, :update_position,
-                 :set_velocity, :update_velocity
+  def_delegators :@sim_client, :push, :set_rotation,
+                               :set_position
 
   def initialize
-    self.bodies = BodyCollection.new
     self.tick_count = 0
-    self.body_mover = BodyMover.new
     init_clients
-    self.body_mover.sim_client = sim_client
     init_game
     init_attrs
   end
@@ -69,12 +64,7 @@ class Game
     self.tick_count += 1
   end
 
-  def add_bodies **kwargs
-    bodies = kwargs.delete :bodies
-    bodies.each { |body| add_body body: body, **kwargs }
-  end
-
-  def add_body body: nil, **kwargs
+  def register_body body: nil, **kwargs
     opts = { width: body.width || 10, height: body.height || 10,
              density: body.density || 0.1, static: body.static || false,
              friction: 0.01, frictionAir: 0.01, frictionStatic: 0.5 }
@@ -96,21 +86,22 @@ class Game
     if body.velocity
       set_velocity body: body, vector: body.velocity
     end
-    self.bodies << body
     return body
   end
 
   def remove_body body: nil
     vis_client.destroy body.uuid
     sim_client.destroy body.uuid
-    bodies.delete body
   end
 
   def update_bodies
     sim_client.list_details.each do |details|
       body_uuid = details['body_uuid']
       body = get_body(uuid: body_uuid)
-      next if body.nil?
+      if body.nil?
+        puts "body lookup miss"
+        next
+      end
       loc = Location.new x: details['position']['x'],
                          y: details['position']['y']
       velocity = Vector.new x: details['velocity']['x'],
@@ -124,7 +115,7 @@ class Game
   end
 
   def get_body uuid: nil
-    bodies.get uuid
+    bodies.get uuid: uuid
   end
 
   def draw_bodies
@@ -136,6 +127,10 @@ class Game
 
   def set_color body: nil, color: nil
     vis_client.set_color body.uuid, color
+  end
+
+  def set_velocity body: nil, vector: nil
+    sim_client.set_velocity body.uuid, vector.x, vector.y
   end
 
   def set_viewport zoom_level: 1, follow: nil
@@ -211,14 +206,5 @@ class HorizontalWall < Wall
     super
     self.width = 1600
     self.height = 10
-  end
-end
-
-module SimpleWalls
-  def add_walls
-    self.add_body body: HorizontalWall.new(location: Location.new(x: 0, y: 400))
-    self.add_body body: HorizontalWall.new(location: Location.new(x: 0, y: -400))
-    self.add_body body: VerticalWall.new(location: Location.new(x: -400, y: 0))
-    self.add_body body: VerticalWall.new(location: Location.new(x: 400, y: 0))
   end
 end
