@@ -144,6 +144,8 @@ class Game
       collision['pair'].map do |uuid|
         get_body(uuid: uuid)
       end
+    end.select do |body1, body2|
+      body1 && body2
     end
   end
 

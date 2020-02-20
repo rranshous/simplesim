@@ -170,6 +170,7 @@ class AttackerShotHandler
 
   def reap_hit
     collisions.each do |attacker|
+      puts "reaping: #{attacker.class} #{attacker.uuid}"
       board.remove_body body: attacker
     end
   end
@@ -234,7 +235,7 @@ attacker_shot_handler.board = board
 attacker_shot_handler.collisions = attacker_collisions
 
 game.run do |tick|
-  if tick % 1000 == 0
+  if tick % 200 == 0
     enemy_spawner.spawn_attacker
   end
   if tick % 100 == 0

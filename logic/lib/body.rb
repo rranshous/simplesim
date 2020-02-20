@@ -256,7 +256,7 @@ class BodyCollectionLookup
         return body
       end
     end
-    raise "body miss: #{uuid}"
+    return nil
   end
 
   def each
