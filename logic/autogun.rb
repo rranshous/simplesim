@@ -39,7 +39,7 @@ class AutoGun < Game
   end
 
   def baddies_near target: nil
-    self.baddies.nearby target.location, max_distance: 100
+    self.baddies.nearby target.location, max_distance: 40
   end
 
   def handle_keypresses
@@ -136,7 +136,7 @@ class Gun < Body
   end
 
   def update_position game: nil
-    distance = shooter.width + 3
+    distance = shooter.width
     go_to game: game,
           position: shooter.ahead(distance: distance)
   end
