@@ -229,7 +229,7 @@ class Position
   end
 
   def == other
-    return false unless other.respond_to?(:x) && other.respond_to(:y)
+    return false unless other.respond_to?(:x) && other.respond_to?(:y)
     self.x == other.x && self.y == other.y
   end
 
@@ -278,6 +278,14 @@ class Vector < Position
     else
       self.class.new(x: self.x * other, y: self.y * other)
     end
+  end
+
+  def < other
+    self.x < other.x && self.y < other.y
+  end
+
+  def > other
+    self.x > other.x && self.y > other.y
   end
 end
 

@@ -243,6 +243,12 @@ class BodyCollectionLookup
     collection(type: type) << body
   end
 
+  def remove_body body: nil
+    self.collections.values.each do |collection|
+      collection.delete body
+    end
+  end
+
   def collection type: nil
     self.collections[type] ||= BodyCollection.new
   end

@@ -1,5 +1,6 @@
 require_relative 'lib/board'
 require_relative 'lib/game'
+require_relative 'lib/client'
 
 class Base < Body
   def init_attrs
@@ -145,6 +146,19 @@ class TowerGun
   end
 end
 
+class BulletReaper
+  attr_accessor :board, :bullets
+
+  def reap_stopped
+    stalled = Vector.new(x: 0.01, y: 0.01)
+    bullets.each do |bullet|
+      if bullet.velocity < stalled
+        board.remove_body body: bullet
+      end
+    end
+  end
+end
+
 body_collections = BodyCollectionLookup.new
 
 game = Game.new
@@ -175,6 +189,10 @@ tower_gun.board = board
 tower_gun.tower = board.player_tower
 tower_gun.bullet_class = Bullet
 
+bullet_reaper = BulletReaper.new
+bullet_reaper.bullets = body_collections.collection type: :bullet
+bullet_reaper.board = board
+
 game.run do |tick|
   if tick % 1000 == 0
     enemy_spawner.spawn_attacker
@@ -183,4 +201,5 @@ game.run do |tick|
     tower_gun.fire_at_nearest_enemy enemies: enemy_attackers
   end
   enemy_mover.move_toward_target target: board.player_base
+  bullet_reaper.reap_stopped
 end
