@@ -1,4 +1,5 @@
 require 'forwardable'
+require_relative 'client'
 require_relative 'body'
 
 def log msg

@@ -51,6 +51,7 @@ class Body
   def initialize location: nil, **kwargs
     self.location = location
     self.rotation = 0
+    self.velocity = Vector.new(x: 0, y:0)
     kwargs.each do |k, v|
       wk = "#{k}="
       if self.respond_to? wk
@@ -74,8 +75,16 @@ class Body
     self.uuid == other.uuid
   end
 
+  def above distance: 1
+    self.location + absolute_up(distance: distance)
+  end
+
   def absolute_up distance: 1
     Vector.new(y: distance)
+  end
+
+  def below distance: 1
+    self.location + absolute_down(distance: distance)
   end
 
   def absolute_down distance: 1
