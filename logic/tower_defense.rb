@@ -152,26 +152,31 @@ class TowerGun
 end
 
 class BulletReaper
-  attr_accessor :board, :bullets
+  attr_accessor :body_remover, :bullets, :collisions
 
   def reap_stopped
     stalled = Vector.new(x: 0.01, y: 0.01)
     bullets.each do |bullet|
       if bullet.velocity < stalled
-        board.remove_body body: bullet
+        body_remover.remove_body body: bullet
       end
+    end
+  end
+
+  def reap_collided
+    collisions.each do |bullet|
+      body_remover.remove_body body: bullet
     end
   end
 end
 
 class AttackerShotHandler
 
-  attr_accessor :board, :collisions
+  attr_accessor :body_remover, :collisions
 
   def reap_hit
     collisions.each do |attacker|
-      puts "reaping: #{attacker.class} #{attacker.uuid}"
-      board.remove_body body: attacker
+      body_remover.remove_body body: attacker
     end
   end
 end
@@ -190,6 +195,26 @@ class CollisionGroup
   end
 end
 
+class BodyRemover
+  attr_accessor :board, :to_remove
+
+  def initialize
+    self.to_remove = {}
+  end
+
+  def remove_body body: nil
+    to_remove[body.uuid] = body
+  end
+
+  def do_removals
+    to_remove.each do |_, body|
+      board.remove_body body: body
+    end
+    to_remove.clear
+  end
+
+end
+
 body_collections = BodyCollectionLookup.new
 
 game = TowerGame.new
@@ -200,10 +225,14 @@ board.game = game
 board.bodies = body_collections
 board.populate_initial
 
+body_remover = BodyRemover.new
+body_remover.board = board
+
 body_mover = BodyMover.new
 body_mover.board = board
 
 enemy_attackers = body_collections.collection type: :enemy_attacker
+bullets = body_collections.collection type: :bullet
 
 enemy_spawner = AttackerSpawner.new
 enemy_spawner.board = board
@@ -220,10 +249,15 @@ tower_gun.board = board
 tower_gun.tower = board.player_tower
 tower_gun.bullet_class = Bullet
 
-bullets = body_collections.collection type: :bullet
+bullet_collisions = CollisionGroup.new
+bullet_collisions.board = board
+bullet_collisions.primary = bullets
+bullet_collisions.secondary = enemy_attackers
+
 bullet_reaper = BulletReaper.new
 bullet_reaper.bullets = bullets
-bullet_reaper.board = board
+bullet_reaper.body_remover = body_remover
+bullet_reaper.collisions = bullet_collisions
 
 attacker_collisions = CollisionGroup.new
 attacker_collisions.board = board
@@ -231,17 +265,19 @@ attacker_collisions.primary = enemy_attackers
 attacker_collisions.secondary = bullets
 
 attacker_shot_handler = AttackerShotHandler.new
-attacker_shot_handler.board = board
+attacker_shot_handler.body_remover = body_remover
 attacker_shot_handler.collisions = attacker_collisions
 
 game.run do |tick|
-  if tick % 200 == 0
+  if tick % 100 == 0
     enemy_spawner.spawn_attacker
   end
-  if tick % 100 == 0
+  if tick % 50 == 0
     tower_gun.fire_at_nearest_enemy enemies: enemy_attackers
   end
   enemy_mover.move_toward_target target: board.player_base
   attacker_shot_handler.reap_hit
   bullet_reaper.reap_stopped
+  bullet_reaper.reap_collided
+  body_remover.do_removals
 end

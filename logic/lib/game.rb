@@ -57,8 +57,9 @@ class Game
   def tick
     diff_ms = (Time.now.to_f - last_tick_time.to_f) * 1000
     step_ms = [diff_ms, MAX_TICK_MS].min
-    sim_client.tick step_ms
-    vis_client.tick step_ms
+    puts "step_ms: #{step_ms}"
+    log_time(:sim_tick) { sim_client.tick step_ms }
+    log_time(:vis_tick) { vis_client.tick step_ms }
     self.last_step_time = step_ms
     self.last_tick_time = Time.now
     self.tick_count += 1
@@ -99,7 +100,7 @@ class Game
       body_uuid = details['body_uuid']
       body = get_body(uuid: body_uuid)
       if body.nil?
-        puts "body lookup miss"
+        puts "updating bodies: body lookup miss"
         next
       end
       loc = Location.new x: details['position']['x'],
@@ -151,10 +152,10 @@ class Game
 
   def run &blk
     loop do
-      blk.call(self.tick_count)
+      log_time(:local_tick) { blk.call(self.tick_count) }
       tick
-      update_bodies
-      draw_bodies
+      log_time(:local_update_bodies) { update_bodies }
+      log_time(:local_draw_bodies) { draw_bodies }
     end
   end
 end
