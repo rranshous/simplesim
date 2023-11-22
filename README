@@ -1,0 +1,5 @@
+
+
+start the visualizer: cd visual && ruby rb_2d_visual.rb
+start the 2d sim engine: cd sim && node sim.js
+last, start the logic (central piece): cd logic && ruby tower_defense.rb

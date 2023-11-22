@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "matter-js": "^0.18.0",
+    "uuid": "^9.0.1"
+  }
+}

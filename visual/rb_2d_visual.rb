@@ -203,11 +203,11 @@ Thread.new do
 end
 
 set title: 'ruby2d visual', background: 'white',
-    width: controller.widow_width,
+    width: controller.window_width,
     height: controller.window_height
 
 begin
-
+  log "beginning"
   update_bodies = lambda do
     controller.pending_updates = false
     controller.bodies.each do |body|
@@ -230,6 +230,7 @@ begin
   end
 
   update do
+    log "in update"
     begin
       if controller.pending_updates
         clear
@@ -242,8 +243,12 @@ begin
     end
   end
 
+  show
+
 rescue => ex
   puts "OEX: #{ex}"
   puts " : #{ex.backtrace}"
   raise
 end
+
+log "at end"

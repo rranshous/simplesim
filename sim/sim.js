@@ -2,10 +2,9 @@ const SOCKET_PATH = '/tmp/sim.sock';
 
 const net      = require('net'),
       readline = require('readline'),
-      msgpack  = require('msgpack'),
       Matter   = require('matter-js'),
-      uuid     = require('uuid/v1'),
       fs       = require('fs');
+const { v4: uuid } = require('uuid');
 
 var port = 5000,
     unixsocket = SOCKET_PATH;
