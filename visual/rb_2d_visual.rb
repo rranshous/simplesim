@@ -24,8 +24,8 @@ def log_time(label)
 end
 
 FPS = 30
-WINDOW_WIDTH = 800
-WINDOW_HEIGHT = 800
+WINDOW_WIDTH = 400
+WINDOW_HEIGHT = 400
 SOCKET_PATH = "/tmp/vis.sock"
 
 class BodyCollection
@@ -82,13 +82,14 @@ class Controller
   def add opts
     case opts['shape']
     when 'rectangle'
-      l, t = self.class.to_lt opts['position']['x'], opts['position']['y']
+      w, h = opts['width'], opts['height']
+      l, t = self.class.to_lt opts['position']['x'], opts['position']['y'], w, h
       body_uuid = opts['body_uuid'] || SecureRandom.uuid.to_s
       color = opts['color'] || :black
       body = OpenStruct.new(body_uuid: body_uuid,
                             shape: :rectangle, color: color,
                             left: l, top: t, rotation: 0,
-                            width: opts['width'], height: opts['height'])
+                            width: w, height: h)
       bodies.add body
       return { body_uuid: body_uuid }
     end
@@ -118,7 +119,8 @@ class Controller
   def set_position opts
     body = bodies.get opts['body_uuid']
     x, y = opts['position']['x'], opts['position']['y']
-    l, t = self.class.to_lt x, y
+    w, h = body.width, body.height
+    l, t = self.class.to_lt x, y, w, h
     body.left = l
     body.top = t
     return { body_uuid: body.body_uuid }
@@ -151,9 +153,9 @@ class Controller
 
   private
 
-  def self.to_lt x, y
-    top = (WINDOW_WIDTH/2) - y
-    left  = (WINDOW_HEIGHT/2) + x
+  def self.to_lt x, y, w, h
+    top = (WINDOW_WIDTH/2) - y - h/2
+    left  = (WINDOW_HEIGHT/2) + x - w/2
     [left, top]
   end
 
@@ -230,7 +232,7 @@ begin
   end
 
   update do
-    log "in update"
+    print '.'
     begin
       if controller.pending_updates
         clear

@@ -4,8 +4,8 @@ require_relative 'lib/client'
 
 class Base < Body
   def init_attrs
-    self.width = 30
-    self.height = 30
+    self.width = 80
+    self.height = 40
     self.static = true
     self.location = Location.new(x: 0, y: 0)
   end
@@ -23,7 +23,7 @@ class EnemyBase < Base
     super
     self.color = 'red'
     self.width = 20
-    self.height = 15
+    self.height = 10
   end
 end
 
@@ -73,13 +73,13 @@ class TowerBoard < Board
 
   def init_enemy_base
     self.enemy_base = EnemyBase.new
-    self.enemy_base.location = Location.new(x: 150, y: 320)
+    self.enemy_base.location = Location.new(x: 40, y: 40)
     add_body body: self.enemy_base, type: :enemy_base
   end
 
   def init_player_tower
-    location = self.player_base.absolute_up(distance: 50) +
-               self.player_base.absolute_left(distance: 50)
+    location = self.player_base.absolute_up(distance: 60) +
+               self.player_base.absolute_left(distance: 60)
     self.player_tower = Tower.new
     self.player_tower.location = location
     add_body body: self.player_tower, type: :player_tower
@@ -91,8 +91,8 @@ class Attacker < Body
 
   def init_attrs
     self.color = 'yellow'
-    self.width = 5
-    self.height = 4
+    self.width = 10
+    self.height = 10
     self.max_speed = 0.2
     self.acceleration = 0.03
   end
@@ -269,7 +269,7 @@ attacker_shot_handler.body_remover = body_remover
 attacker_shot_handler.collisions = attacker_collisions
 
 game.run do |tick|
-  if tick % 100 == 0
+  if tick % 10 == 0
     enemy_spawner.spawn_attacker
   end
   if tick % 50 == 0
