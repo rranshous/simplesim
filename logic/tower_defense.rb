@@ -91,8 +91,8 @@ class Attacker < Body
     self.color = 'yellow'
     self.width = 10
     self.height = 10
-    self.max_speed = 0.2
-    self.acceleration = 0.03
+    self.max_speed = 10
+    self.acceleration = 3
   end
 end
 
@@ -275,7 +275,9 @@ game.run do |tick|
   if tick % 35 == 0
     tower_gun.fire_at_nearest_enemy enemies: enemy_attackers
   end
-  enemy_mover.move_toward_target target: board.player_base
+  if tick % 100 == 0 
+    enemy_mover.move_toward_target target: board.player_base
+  end
   attacker_shot_handler.reap_hit
   bullet_reaper.reap_stopped
   bullet_reaper.reap_collided

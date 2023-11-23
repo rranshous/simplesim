@@ -241,16 +241,23 @@ begin
             color: followed_opts[:color]
           )
         else
-          body.render_obj.x = followed_opts[:left]
-          body.render_obj.y = followed_opts[:top]
-          body.render_obj.width = followed_opts[:width]
-          body.render_obj.height = followed_opts[:height]
-          body.render_obj.color = followed_opts[:color]
+          body.render_obj.x = followed_opts[:left] if body.render_obj.x != followed_opts[:left]
+          body.render_obj.y = followed_opts[:top] if body.render_obj.y != followed_opts[:top]
+          body.render_obj.width = followed_opts[:width] if body.render_obj.width != followed_opts[:width]
+          body.render_obj.height = followed_opts[:height] if body.render_obj.height != followed_opts[:height]
+          body.render_obj.color = followed_opts[:color] if body.render_obj.color != followed_opts[:color]
         end
       end
     end
     controller.destroyed_render_objs.delete_if do |render_obj|
-      render_obj.remove
+      begin
+        render_obj.remove
+      rescue
+        # removed before it's been rendered?
+        true
+      ensure
+        true
+      end
     end
   end
 
