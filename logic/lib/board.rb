@@ -1,5 +1,7 @@
 require 'forwardable'
 
+# Concern: Management of bodies
+
 class Board
   extend Forwardable
 

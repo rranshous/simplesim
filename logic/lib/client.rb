@@ -213,6 +213,7 @@ class SimClient < Client
   end
 end
 
+# Value Object representing positing in game space
 class Position
   attr_accessor :x, :y
 
@@ -238,6 +239,7 @@ class Position
   end
 end
 
+# Concern: representing position, in game space, relative to other positions
 class Location < Position
 
   def distance_to other
@@ -267,6 +269,7 @@ class Location < Position
   end
 end
 
+# Concern: Position and Magnitude
 class Vector < Position
   def scale scalar
     Vector.new(x: self.x * scalar, y: self.y * scalar)
@@ -289,6 +292,7 @@ class Vector < Position
   end
 end
 
+# Concern: Safe Vector?
 class CappedVector < Vector
   attr_reader :max_x, :max_y
 

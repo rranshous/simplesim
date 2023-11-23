@@ -1,57 +1,8 @@
 require_relative 'body_collection'
 
-class BodyMover
-  extend Forwardable
 
-  attr_accessor :board
-
-  def_delegators :@board, :set_velocity
-
-  def set_rotation body: nil, rotation: nil
-    board.set_rotation body.uuid, rotation
-  end
-
-  def update_rotation body: nil
-    set_rotation body: body, rotation: body.rotation
-  end
-
-  def set_position body: nil, position: nil
-    board.set_position(body.uuid, position)
-  end
-
-  def update_position body: nil
-    set_position body: body, position: body.location
-  end
-
-  def update_velocity body: nil
-    set_velocity body: body, vector: body.velocity
-  end
-
-  def push body: nil, direction: nil, vector: nil
-    vector ||= body.send(direction)
-    body.velocity += vector * (body.acceleration || 1)
-    update_velocity body: body
-  end
-
-  def turn_to body: nil, rotation: nil
-    body.rotation = rotation
-    update_rotation body: body
-  end
-
-  def turn_toward body: nil, target: nil
-    turn_to body: body, rotation: body.angle_to(target.location)
-  end
-
-  def go_to body: nil, position: nil
-    body.location = position
-    update_position body: body
-  end
-
-  def go_toward body: nil, target: nil
-    push body: body, vector: body.vector_to(target.location)
-  end
-end
-
+# Concern: Data object for representing object in game space
+#  some location helpers tacked on
 class Body
   extend Forwardable
 
@@ -120,6 +71,7 @@ class Body
   end
 end
 
+# Concern: Mixing in to an object data fields for movement
 module Mover
 
   def velocity= other
@@ -180,3 +132,55 @@ module Mover
   end
 end
 
+# Concern: Describing to the Board how we want to move a Body
+class BodyMover
+  extend Forwardable
+
+  attr_accessor :board
+
+  def_delegators :@board, :set_velocity
+
+  def set_rotation body: nil, rotation: nil
+    board.set_rotation body.uuid, rotation
+  end
+
+  def update_rotation body: nil
+    set_rotation body: body, rotation: body.rotation
+  end
+
+  def set_position body: nil, position: nil
+    board.set_position(body.uuid, position)
+  end
+
+  def update_position body: nil
+    set_position body: body, position: body.location
+  end
+
+  def update_velocity body: nil
+    set_velocity body: body, vector: body.velocity
+  end
+
+  def push body: nil, direction: nil, vector: nil
+    vector ||= body.send(direction)
+    body.velocity += vector * (body.acceleration || 1)
+    update_velocity body: body
+  end
+
+  def turn_to body: nil, rotation: nil
+    body.rotation = rotation
+    update_rotation body: body
+  end
+
+  def turn_toward body: nil, target: nil
+    turn_to body: body, rotation: body.angle_to(target.location)
+  end
+
+  def go_to body: nil, position: nil
+    body.location = position
+    update_position body: body
+  end
+
+  def go_toward body: nil, target: nil
+    push body: body, vector: body.vector_to(target.location)
+  end
+end

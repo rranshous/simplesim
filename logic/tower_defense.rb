@@ -108,6 +108,8 @@ class AttackerSpawner
     board.add_body body: attacker, type: :enemy_attacker
   end
 
+  private
+
   def random_nearby
     min_distance = [spawn_from.width, spawn_from.height].max
     nearby = spawn_from.location
@@ -218,6 +220,10 @@ board.player_base.absolute_left(distance: 60)
 board.player_tower = Tower.new
 board.player_tower.location = location
 board.add_body body: board.player_tower, type: :player_tower
+
+wall = HorizontalWall.new
+wall.location = Location.new(x: 100, y: 200)
+board.add_body body: wall, type: :wall
 
 body_remover = BodyRemover.new
 body_remover.board = board

@@ -18,6 +18,8 @@ def log_time(label)
   r
 end
 
+# Concern: Describing changes in the game state to
+# the simulator and visual layers
 class Game
   extend Forwardable
 
@@ -100,7 +102,7 @@ class Game
       body_uuid = details['body_uuid']
       body = get_body(uuid: body_uuid)
       if body.nil?
-        puts "updating bodies: body lookup miss"
+        puts "updating bodies: body lookup miss\n#{details}"
         next
       end
       loc = Location.new x: details['position']['x'],
