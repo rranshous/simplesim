@@ -28,6 +28,8 @@ WINDOW_WIDTH = 1000
 WINDOW_HEIGHT = 1000
 SOCKET_PATH = "/tmp/vis.sock"
 
+# TODO: can/should we be using the BodyCollection obj
+# from logic/lib?
 class BodyCollection
   def initialize
     @bodies = {}
@@ -54,12 +56,17 @@ class BodyCollection
   def get body_uuid
     @bodies[body_uuid]
   end
+
+  def size
+    @bodies.size
+  end
 end
 
 class Controller
   attr_accessor :bodies, :clicks, :keypresses, :mouse_pos,
                 :pending_updates, :zoomer, :viewport_follower,
-                :window_width, :window_height, :viewport_leader
+                :window_width, :window_height, :viewport_leader,
+                :destroyed_render_objs
 
   def initialize
     self.pending_updates = false
@@ -69,6 +76,7 @@ class Controller
     self.keypresses = []
     self.zoomer = Zoomer.new
     self.viewport_follower = ViewportFollower.new
+    self.destroyed_render_objs = []
   end
 
   def zoom el_opts: nil
@@ -89,7 +97,8 @@ class Controller
       body = OpenStruct.new(body_uuid: body_uuid,
                             shape: :rectangle, color: color,
                             left: l, top: t, rotation: 0,
-                            width: w, height: h)
+                            width: w, height: h,
+                            render_obj: nil)
       bodies.add body
       return { body_uuid: body_uuid }
     end
@@ -98,6 +107,7 @@ class Controller
   def destroy opts
     body = bodies.get(opts['body_uuid'])
     bodies.remove body
+    self.destroyed_render_objs << body.render_obj
     return { body_uuid: opts['body_uuid'] }
   end
 
@@ -212,6 +222,7 @@ begin
   log "beginning"
   update_bodies = lambda do
     controller.pending_updates = false
+    log "body count: #{controller.bodies.size}"
     controller.bodies.each do |body|
       case body.shape
       when :rectangle
@@ -222,12 +233,24 @@ begin
           color: body.color
         }
         followed_opts = controller.viewport_follow el_opts: opts
-        Rectangle.new(
-          x: followed_opts[:left], y: followed_opts[:top],
-          width: followed_opts[:width], height: followed_opts[:height],
-          color: followed_opts[:color]
-        )
+        if body.render_obj.nil?
+          log "creating new render obj"
+          body.render_obj = Rectangle.new(
+            x: followed_opts[:left], y: followed_opts[:top],
+            width: followed_opts[:width], height: followed_opts[:height],
+            color: followed_opts[:color]
+          )
+        else
+          body.render_obj.x = followed_opts[:left]
+          body.render_obj.y = followed_opts[:top]
+          body.render_obj.width = followed_opts[:width]
+          body.render_obj.height = followed_opts[:height]
+          body.render_obj.color = followed_opts[:color]
+        end
       end
+    end
+    controller.destroyed_render_objs.delete_if do |render_obj|
+      render_obj.remove
     end
   end
 
@@ -235,7 +258,6 @@ begin
     print '.'
     begin
       if controller.pending_updates
-        clear
         update_bodies.call()
       end
     rescue => ex

@@ -222,7 +222,7 @@ board.player_tower.location = location
 board.add_body body: board.player_tower, type: :player_tower
 
 wall = HorizontalWall.new
-wall.location = Location.new(x: 100, y: 200)
+wall.location = Location.new(x: 1000, y: 200)
 board.add_body body: wall, type: :wall
 
 body_remover = BodyRemover.new
@@ -269,7 +269,7 @@ attacker_shot_handler.body_remover = body_remover
 attacker_shot_handler.collisions = attacker_collisions
 
 game.run do |tick|
-  if tick % 100 == 0
+  if tick % 10 == 0
     enemy_spawner.spawn_attacker
   end
   if tick % 35 == 0
