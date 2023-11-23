@@ -4,8 +4,8 @@ require_relative 'lib/client'
 
 class Base < Body
   def init_attrs
-    self.width = 80
-    self.height = 40
+    self.width = 20
+    self.height = 20
     self.static = true
     self.location = Location.new(x: 0, y: 0)
   end
@@ -22,8 +22,6 @@ class EnemyBase < Base
   def init_attrs
     super
     self.color = 'red'
-    self.width = 20
-    self.height = 10
   end
 end
 
@@ -50,7 +48,7 @@ class Bullet < Body
   end
 
   def self.speed
-    3
+    4
   end
 end
 
@@ -73,7 +71,7 @@ class TowerBoard < Board
 
   def init_enemy_base
     self.enemy_base = EnemyBase.new
-    self.enemy_base.location = Location.new(x: 40, y: 40)
+    self.enemy_base.location = Location.new(x: 400, y: 250)
     add_body body: self.enemy_base, type: :enemy_base
   end
 
@@ -254,25 +252,25 @@ bullet_collisions.board = board
 bullet_collisions.primary = bullets
 bullet_collisions.secondary = enemy_attackers
 
-bullet_reaper = BulletReaper.new
-bullet_reaper.bullets = bullets
-bullet_reaper.body_remover = body_remover
-bullet_reaper.collisions = bullet_collisions
-
 attacker_collisions = CollisionGroup.new
 attacker_collisions.board = board
 attacker_collisions.primary = enemy_attackers
 attacker_collisions.secondary = bullets
+
+bullet_reaper = BulletReaper.new
+bullet_reaper.bullets = bullets
+bullet_reaper.body_remover = body_remover
+bullet_reaper.collisions = bullet_collisions
 
 attacker_shot_handler = AttackerShotHandler.new
 attacker_shot_handler.body_remover = body_remover
 attacker_shot_handler.collisions = attacker_collisions
 
 game.run do |tick|
-  if tick % 10 == 0
+  if tick % 100 == 0
     enemy_spawner.spawn_attacker
   end
-  if tick % 50 == 0
+  if tick % 35 == 0
     tower_gun.fire_at_nearest_enemy enemies: enemy_attackers
   end
   enemy_mover.move_toward_target target: board.player_base

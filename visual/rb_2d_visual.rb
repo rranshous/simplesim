@@ -24,8 +24,8 @@ def log_time(label)
 end
 
 FPS = 30
-WINDOW_WIDTH = 400
-WINDOW_HEIGHT = 400
+WINDOW_WIDTH = 1000
+WINDOW_HEIGHT = 1000
 SOCKET_PATH = "/tmp/vis.sock"
 
 class BodyCollection
