@@ -34,6 +34,23 @@ class Tower < Body
   end
 end
 
+class TowerGun
+  attr_accessor :board, :tower, :bullet_class
+
+  def fire_at_nearest_enemy enemies: nil
+    enemy = nearest_enemy enemies: enemies
+    return false unless enemy
+    bullet = bullet_class.new
+    bullet.location = tower.absolute_up distance: tower.height
+    bullet.velocity = tower.vector_to(enemy.location) * bullet_class.speed
+    board.add_body body: bullet, type: :bullet
+  end
+
+  def nearest_enemy enemies: nil
+    enemies.near tower
+  end
+end
+
 class Bullet < Body
   include Mover
 
@@ -57,23 +74,6 @@ end
 
 class TowerBoard < Board
   attr_accessor :player_base, :enemy_base, :player_tower
-
-  def populate_initial
-    init_player_base
-    init_enemy_base
-    init_player_tower
-  end
-
-  def init_player_base
-    self.player_base = PlayerBase.new
-    add_body body: self.player_base, type: :player_base
-  end
-
-  def init_enemy_base
-    self.enemy_base = EnemyBase.new
-    self.enemy_base.location = Location.new(x: 400, y: 250)
-    add_body body: self.enemy_base, type: :enemy_base
-  end
 
   def init_player_tower
     location = self.player_base.absolute_up(distance: 60) +
@@ -132,22 +132,6 @@ class AttackerMover
   end
 end
 
-class TowerGun
-  attr_accessor :board, :tower, :bullet_class
-
-  def fire_at_nearest_enemy enemies: nil
-    enemy = nearest_enemy enemies: enemies
-    return false unless enemy
-    bullet = bullet_class.new
-    bullet.location = tower.absolute_up distance: tower.height
-    bullet.velocity = tower.vector_to(enemy.location) * bullet_class.speed
-    board.add_body body: bullet, type: :bullet
-  end
-
-  def nearest_enemy enemies: nil
-    enemies.near tower
-  end
-end
 
 class BulletReaper
   attr_accessor :body_remover, :bullets, :collisions
@@ -221,7 +205,19 @@ game.bodies = body_collections
 board = TowerBoard.new
 board.game = game
 board.bodies = body_collections
-board.populate_initial
+
+board.player_base = PlayerBase.new
+board.add_body body: board.player_base, type: :player_base
+
+board.enemy_base = EnemyBase.new
+board.enemy_base.location = Location.new(x: 400, y: 250)
+board.add_body body: board.enemy_base, type: :enemy_base
+
+location = board.player_base.absolute_up(distance: 60) +
+board.player_base.absolute_left(distance: 60)
+board.player_tower = Tower.new
+board.player_tower.location = location
+board.add_body body: board.player_tower, type: :player_tower
 
 body_remover = BodyRemover.new
 body_remover.board = board
