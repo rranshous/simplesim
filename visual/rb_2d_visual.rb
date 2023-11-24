@@ -215,6 +215,21 @@ class SocketWriter
   end
 end
 
+class SocketSerializer
+  def initialize socket
+    @socket_reader = SocketReader.new(socket)
+    @socket_writer = SocketWriter.new(socket)
+  end
+
+  def each &blk
+    @socket_reader.each &blk
+  end
+
+  def write data
+    @socket_writer.write data
+  end
+end
+
 class MessageReader
   def initialize socket_reader, high_priority_messages, low_priority_messages
     @high_priority_messages = high_priority_messages
@@ -282,8 +297,8 @@ class BackpressureQueue
     @queue.size
   end
 
-  def pop
-    amount_to_skip.times { @queue.pop() }
+  def pop _
+    amount_to_skip.times { @queue.pop(true) }
     @queue.pop(true)
   end
 
@@ -293,6 +308,23 @@ class BackpressureQueue
 
   def amount_to_skip
     @queue.size() / @target_length
+  end
+end
+
+class QueueLooper
+  def initialize queue
+    @queue = queue
+  end
+
+  def each &blk
+    loop do
+      begin
+        data = @queue.pop(true)
+        blk.call(data)
+      rescue ThreadError
+        return
+      end
+    end
   end
 end
 
@@ -330,6 +362,9 @@ class Renderer
 end
 
 
+puts "removing socket"
+File.unlink SOCKET_PATH rescue false
+
 controller = Controller.new
 controller.window_width = WINDOW_WIDTH
 controller.window_height = WINDOW_HEIGHT
@@ -340,23 +375,16 @@ high_priority_messages = Thread::Queue.new
 low_priority_messages = BackpressureQueue.new(1000)
 replies = Thread::Queue.new
 
-puts "removing socket"
-File.unlink SOCKET_PATH rescue false
 puts "listening"
-serv = UNIXServer.open(SOCKET_PATH)
-socket = serv.accept
+socket_serializer = SocketSerializer.new(UNIXServer.open(SOCKET_PATH).accept)
 
 puts "starting message reader thread"
-message_reader = MessageReader.new(SocketReader.new(socket),
-                                   high_priority_messages, low_priority_messages)
+message_reader = MessageReader.new(socket_serializer, high_priority_messages, low_priority_messages)
 message_reader.start
 
 puts "starting socker responder thread"
-message_writer = MessageWriter.new(SocketWriter.new(socket),
-                                   replies)
+message_writer = MessageWriter.new(socket_serializer, replies)
 message_writer.start
-
-
 
 
 set title: 'ruby2d visual', background: 'white',
@@ -369,35 +397,29 @@ begin
   update_bodies = lambda do
     log "B: #{controller.bodies.size}\tQ: #{low_priority_messages.size()}\tS: #{low_priority_messages.amount_to_skip()}"
     updated_uuids = []
+
     log_debug "about to processes high priorty messages from thread"
-    begin
-      while message = high_priority_messages.pop(true)
-        log_debug "processing high priority message: #{message}"
-        replies << controller.send(message['message'], message)
-        updated_uuids << message['body_uuid']
-      end
-    rescue ThreadError
-      log_debug "done processing high priority queued messages"
+    QueueLooper.new(high_priority_messages).each do |message|
+      log_debug "processing high priority message: #{message}"
+      replies << controller.send(message['message'], message)
+      updated_uuids << message['body_uuid']
     end
+    log_debug "done processing high priority queued messages"
 
     log_debug "about to processes low priorty messages from thread"
-    begin
-      loop do
-        message = low_priority_messages.pop()
-        body = controller.bodies.get(message['body_uuid'])
-        log_debug "processing low message: #{message}"
-        # it's possible a low priority message is out of order and the relevant
-        # obj has been destroyed. only send message to controller if it's for
-        # a body which still exists
-        if body
-          controller.send(message['message'], message)
-          updated_uuids << message['body_uuid']
-        end
+    QueueLooper.new(low_priority_messages).each do |message|
+      body = controller.bodies.get(message['body_uuid'])
+      log_debug "processing low message: #{message}"
+      # it's possible a low priority message is out of order and the relevant
+      # obj has been destroyed. only send message to controller if it's for
+      # a body which still exists
+      if body
+        controller.send(message['message'], message)
+        updated_uuids << message['body_uuid']
       end
-    # queue is empty
-    rescue ThreadError
-      log_debug "done processing low priority queued messages"
     end
+    log_debug "done processing low priority queued messages"
+  
 
     log_debug "updating bodies: #{updated_uuids.size}"
     updated_uuids.each do |uuid|
