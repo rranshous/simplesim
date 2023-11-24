@@ -296,9 +296,10 @@ begin
     rescue ThreadError
       log_debug "done processing low priority queued messages"
     else
-      if low_priority_messages.size() > 1000
-        log "queue length too high (#{low_priority_messages.size()}) - clearing queue"
-        low_priority_messages.clear
+      queue_size = low_priority_messages.size()
+      if queue_size > 1000
+        log "queue length too high (#{low_priority_messages.size()}) - removing some queued items"
+        (queue_size/2).times { low_priority_messages.pop(true) } rescue ThreadError
       else
         log_debug "queue length: #{low_priority_messages.size()}"
       end

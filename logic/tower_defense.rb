@@ -57,8 +57,8 @@ class Bullet < Body
   attr_accessor :friction
 
   def init_attrs
-    self.width = 1
-    self.height = 1
+    self.width = 2
+    self.height = 2
     self.density = 0.8
     self.friction = 0.001
     self.color = 'orange'
@@ -128,7 +128,7 @@ class AttackerMover
 
   def move_toward_target target: nil
     collection.each do |attacker|
-      body_mover.turn_toward body: attacker, target: target
+      #body_mover.turn_toward body: attacker, target: target
       body_mover.go_toward body: attacker, target: target
     end
   end
@@ -269,10 +269,10 @@ attacker_shot_handler.body_remover = body_remover
 attacker_shot_handler.collisions = attacker_collisions
 
 game.run do |tick|
-  if tick % 10 == 0
+  if tick % 2 == 0
     enemy_spawner.spawn_attacker
   end
-  if tick % 35 == 0
+  if tick % 20 == 0
     tower_gun.fire_at_nearest_enemy enemies: enemy_attackers
   end
   if tick % 100 == 0 
