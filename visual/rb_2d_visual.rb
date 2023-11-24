@@ -284,7 +284,7 @@ class BackpressureQueue
 
   def pop
     amount_to_skip.times { @queue.pop() }
-    @queue.pop()
+    @queue.pop(true)
   end
 
   def push data
@@ -374,7 +374,7 @@ begin
 
     log_debug "about to processes low priorty messages from thread"
     begin
-      100.times do
+      loop do
         message = low_priority_messages.pop()
         body = controller.bodies.get(message['body_uuid'])
         log_debug "processing low message: #{message}"
