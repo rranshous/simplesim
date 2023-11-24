@@ -248,11 +248,11 @@ class Position
   end
 
   def + loc
-    self.class.new({ x: self.x + loc.x, y: self.y + loc.y })
+    self.class.new( x: self.x + loc.x, y: self.y + loc.y )
   end
 
   def - loc
-    self.class.new({ x: self.x - loc.x, y: self.y - loc.y })
+    self.class.new( x: self.x - loc.x, y: self.y - loc.y )
   end
 
   def == other
