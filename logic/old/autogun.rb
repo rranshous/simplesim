@@ -97,7 +97,7 @@ class Shooter < Body
   attr_accessor :gun
 
   def init_attrs
-    self.color = 'black'
+    self.color = 'pink'
     self.width = 20
     self.height = 20
     self.max_speed = 0.8

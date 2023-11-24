@@ -14,7 +14,7 @@ def log_time(label)
   if t < 0.01
     t = "~0"
   end
-  log "#{label}: #{t}"
+  log "#{label}: #{t.round(3)}"
   r
 end
 
@@ -59,7 +59,7 @@ class Game
   def tick
     diff_ms = (Time.now.to_f - last_tick_time.to_f) * 1000
     step_ms = [diff_ms, MAX_TICK_MS].min
-    puts "step_ms: #{step_ms}"
+    puts "step_ms: #{step_ms.round(3)}"
     log_time(:sim_tick) { sim_client.tick step_ms }
     log_time(:vis_tick) { vis_client.tick step_ms }
     self.last_step_time = step_ms

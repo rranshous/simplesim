@@ -101,7 +101,7 @@ class Controller
       w, h = opts['width'], opts['height']
       l, t = self.class.to_lt opts['position']['x'], opts['position']['y'], w, h
       body_uuid = opts['body_uuid'] || SecureRandom.uuid.to_s
-      color = opts['color'] || :black
+      color = opts['color'] || 'purple'
       body = OpenStruct.new(body_uuid: body_uuid,
                             shape: :rectangle, color: color,
                             left: l, top: t, rotation: 0,
@@ -192,7 +192,8 @@ controller = Controller.new
 controller.window_width = WINDOW_WIDTH
 controller.window_height = WINDOW_HEIGHT
 
-messages = Thread::Queue.new
+high_priority_messages = Thread::Queue.new
+low_priority_messages = Thread::Queue.new
 replies = Thread::Queue.new
 
 Thread.new do
@@ -209,7 +210,11 @@ Thread.new do
           log_debug "thread got data: #{data}"
           (data['messages'] || [data]).each do |message_data|
             log_debug "thread enqueuing message data: #{message_data}"
-            messages << message_data
+            if ['set_position','set_rotation'].include?(message_data['message'])
+              low_priority_messages << message_data
+            else
+              high_priority_messages << message_data
+            end
           end
           log_debug "thread waiting for reploy"
           reply = replies.pop
@@ -230,48 +235,83 @@ set title: 'ruby2d visual', background: 'white',
 
 begin
   log "beginning"
+
+  update_body = lambda do |controller, body|
+    case body.shape
+    when :rectangle
+      degrees = Controller.to_deg body.rotation
+      opts = {
+        top: body.top, left: body.left,
+        width: body.width, height: body.height,
+        color: body.color
+      }
+      followed_opts = controller.viewport_follow el_opts: opts
+      if body.render_obj.nil?
+        log_debug "creating new render obj"
+        body.render_obj = Rectangle.new(
+          x: followed_opts[:left], y: followed_opts[:top],
+          width: followed_opts[:width], height: followed_opts[:height],
+          color: followed_opts[:color]
+        )
+      else
+        body.render_obj.x = followed_opts[:left] if body.render_obj.x != followed_opts[:left]
+        body.render_obj.y = followed_opts[:top] if body.render_obj.y != followed_opts[:top]
+        body.render_obj.width = followed_opts[:width] if body.render_obj.width != followed_opts[:width]
+        body.render_obj.height = followed_opts[:height] if body.render_obj.height != followed_opts[:height]
+        body.render_obj.color = followed_opts[:color] if body.render_obj.color != followed_opts[:color]
+      end
+    end
+  end
+
   update_bodies = lambda do
     log "body count: #{controller.bodies.size}"
     reply = []
-    log_debug "about to processes messages from thread"
+    updated_uuids = []
+    log_debug "about to processes high priorty messages from thread"
     begin
-      while message = messages.pop(true)
-        log_debug "processing message: #{message}"
+      while message = high_priority_messages.pop(true)
+        log_debug "processing high priority message: #{message}"
         reply << controller.send(message['message'], message)
+        updated_uuids << message['body_uuid']
+      end
+    rescue ThreadError
+      log_debug "done processing high priority queued messages"
+    end
+
+    log_debug "about to processes low priorty messages from thread"
+    begin
+      100.times do
+        message = low_priority_messages.pop(true)
+        body = controller.bodies.get(message['body_uuid'])
+        log_debug "processing low message: #{message}"
+        # it's possible a low priority message is out of order and the relevant
+        # obj has been destroyed. only send message to controller if it's for
+        # a body which still exists
+        if body
+          controller.send(message['message'], message)
+          updated_uuids << message['body_uuid']
+        end
       end
     # queue is empty
     rescue ThreadError
-      log_debug "done processing queued messages"
-      if reply.empty?
-        print '.'
+      log_debug "done processing low priority queued messages"
+    else
+      if low_priority_messages.size() > 1000
+        log "queue length too high (#{low_priority_messages.size()}) - clearing queue"
+        low_priority_messages.clear
+      else
+        log_debug "queue length: #{low_priority_messages.size()}"
       end
     end
-    controller.bodies.each do |body|
-      case body.shape
-      when :rectangle
-        degrees = Controller.to_deg body.rotation
-        opts = {
-          top: body.top, left: body.left,
-          width: body.width, height: body.height,
-          color: body.color
-        }
-        followed_opts = controller.viewport_follow el_opts: opts
-        if body.render_obj.nil?
-          log "creating new render obj"
-          body.render_obj = Rectangle.new(
-            x: followed_opts[:left], y: followed_opts[:top],
-            width: followed_opts[:width], height: followed_opts[:height],
-            color: followed_opts[:color]
-          )
-        else
-          body.render_obj.x = followed_opts[:left] if body.render_obj.x != followed_opts[:left]
-          body.render_obj.y = followed_opts[:top] if body.render_obj.y != followed_opts[:top]
-          body.render_obj.width = followed_opts[:width] if body.render_obj.width != followed_opts[:width]
-          body.render_obj.height = followed_opts[:height] if body.render_obj.height != followed_opts[:height]
-          body.render_obj.color = followed_opts[:color] if body.render_obj.color != followed_opts[:color]
-        end
+
+    log_debug "updating bodies: #{updated_uuids.size}"
+    updated_uuids.each do |uuid|
+      body = controller.bodies.get(uuid)
+      if body
+        update_body.call(controller, body)
       end
     end
+
     controller.destroyed_render_objs.delete_if do |render_obj|
       begin
         render_obj.remove
@@ -282,7 +322,9 @@ begin
         true
       end
     end
-    replies << reply
+    if !reply.empty?
+      replies << reply
+    end
   end
 
   update do

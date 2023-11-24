@@ -84,7 +84,7 @@ class Controller
     when 'rectangle'
       l, t = self.class.to_lt opts['position']['x'], opts['position']['y']
       body_uuid = opts['body_uuid'] || SecureRandom.uuid.to_s
-      color = opts['color'] || :black
+      color = opts['color'] || :purple
       body = OpenStruct.new(body_uuid: body_uuid,
                             shape: :rectangle, color: color,
                             left: l, top: t, rotation: 0,
