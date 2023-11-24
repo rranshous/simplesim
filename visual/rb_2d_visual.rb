@@ -331,7 +331,26 @@ end
 class Renderer
   def initialize controller
     @controller = controller
+    @updated_uuids = []
   end
+
+  def register_update body_uuid
+    @updated_uuids << body_uuid
+  end
+
+  def make_updates
+    @updated_uuids
+      .map { |uuid| @controller.bodies.get(uuid) }
+      .compact
+      .each { |body| update_body(body) }
+    @updated_uuids.clear
+  end
+
+  def outstanding_updates_count
+    @updated_uuids.size()
+  end
+
+  private
 
   def update_body body
     case body.shape
@@ -396,13 +415,12 @@ begin
 
   update_bodies = lambda do
     log "B: #{controller.bodies.size}\tQ: #{low_priority_messages.size()}\tS: #{low_priority_messages.amount_to_skip()}"
-    updated_uuids = []
 
     log_debug "about to processes high priorty messages from thread"
     QueueLooper.new(high_priority_messages).each do |message|
       log_debug "processing high priority message: #{message}"
-      replies << controller.send(message['message'], message)
-      updated_uuids << message['body_uuid']
+      replies.push(controller.send(message['message'], message))
+      renderer.register_update(message['body_uuid'])
     end
     log_debug "done processing high priority queued messages"
 
@@ -415,19 +433,13 @@ begin
       # a body which still exists
       if body
         controller.send(message['message'], message)
-        updated_uuids << message['body_uuid']
+        renderer.register_update(message['body_uuid'])
       end
     end
     log_debug "done processing low priority queued messages"
   
-
-    log_debug "updating bodies: #{updated_uuids.size}"
-    updated_uuids.each do |uuid|
-      body = controller.bodies.get(uuid)
-      if body
-        renderer.update_body(body)
-      end
-    end
+    log_debug "updating bodies: #{renderer.outstanding_updates_count()}"
+    renderer.make_updates
 
     controller.destroyed_render_objs.delete_if do |render_obj|
       begin
