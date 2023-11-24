@@ -7,9 +7,17 @@ require_relative 'keyboard'
 require_relative 'zoomer'
 require_relative 'viewport_follower'
 
+DEBUG = false
+
 def log msg
   STDERR.write "#{msg}\n"
   STDERR.flush
+end
+
+def log_debug msg
+  if DEBUG
+    log msg
+  end
 end
 
 def log_time(label)
@@ -184,6 +192,9 @@ controller = Controller.new
 controller.window_width = WINDOW_WIDTH
 controller.window_height = WINDOW_HEIGHT
 
+messages = Thread::Queue.new
+replies = Thread::Queue.new
+
 Thread.new do
   loop do
     begin
@@ -195,16 +206,15 @@ Thread.new do
         loop do
           wire_data = s.gets
           data = JSON.load(wire_data)
-          if data['messages']
-            r = data['messages'].map do |message_data|
-              controller.send message_data['message'], message_data
-            end
-            s.puts JSON.dump(r)
-          else
-            r = controller.send data['message'], data
-            s.puts JSON.dump(r)
+          log_debug "thread got data: #{data}"
+          (data['messages'] || [data]).each do |message_data|
+            log_debug "thread enqueuing message data: #{message_data}"
+            messages << message_data
           end
-          controller.pending_updates = true
+          log_debug "thread waiting for reploy"
+          reply = replies.pop
+          log_debug "thread got reply: #{reply}"
+          s.puts JSON.dump(reply)
         end
       end
     rescue => ex
@@ -221,8 +231,21 @@ set title: 'ruby2d visual', background: 'white',
 begin
   log "beginning"
   update_bodies = lambda do
-    controller.pending_updates = false
     log "body count: #{controller.bodies.size}"
+    reply = []
+    log_debug "about to processes messages from thread"
+    begin
+      while message = messages.pop(true)
+        log_debug "processing message: #{message}"
+        reply << controller.send(message['message'], message)
+      end
+    # queue is empty
+    rescue ThreadError
+      log_debug "done processing queued messages"
+      if reply.empty?
+        print '.'
+      end
+    end
     controller.bodies.each do |body|
       case body.shape
       when :rectangle
@@ -259,14 +282,12 @@ begin
         true
       end
     end
+    replies << reply
   end
 
   update do
-    print '.'
     begin
-      if controller.pending_updates
-        update_bodies.call()
-      end
+      update_bodies.call()
     rescue => ex
       puts "EX: #{ex}"
       puts " : #{ex.backtrace}"
