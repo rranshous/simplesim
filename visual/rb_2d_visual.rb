@@ -296,10 +296,45 @@ class BackpressureQueue
   end
 end
 
+class Renderer
+  def initialize controller
+    @controller = controller
+  end
+
+  def update_body body
+    case body.shape
+    when :rectangle
+      degrees = Controller.to_deg body.rotation
+      opts = {
+        top: body.top, left: body.left,
+        width: body.width, height: body.height,
+        color: body.color
+      }
+      followed_opts = @controller.viewport_follow el_opts: opts
+      if body.render_obj.nil?
+        log_debug "creating new render obj"
+        body.render_obj = Rectangle.new(
+          x: followed_opts[:left], y: followed_opts[:top],
+          width: followed_opts[:width], height: followed_opts[:height],
+          color: followed_opts[:color]
+        )
+      else
+        body.render_obj.x = followed_opts[:left]
+        body.render_obj.y = followed_opts[:top]
+        body.render_obj.width = followed_opts[:width]
+        body.render_obj.height = followed_opts[:height]
+        body.render_obj.color = followed_opts[:color]
+      end
+    end
+  end
+end
+
 
 controller = Controller.new
 controller.window_width = WINDOW_WIDTH
 controller.window_height = WINDOW_HEIGHT
+
+renderer = Renderer.new controller
 
 high_priority_messages = Thread::Queue.new
 low_priority_messages = BackpressureQueue.new(1000)
@@ -330,33 +365,6 @@ set title: 'ruby2d visual', background: 'white',
 
 begin
   log "beginning"
-
-  update_body = lambda do |controller, body|
-    case body.shape
-    when :rectangle
-      degrees = Controller.to_deg body.rotation
-      opts = {
-        top: body.top, left: body.left,
-        width: body.width, height: body.height,
-        color: body.color
-      }
-      followed_opts = controller.viewport_follow el_opts: opts
-      if body.render_obj.nil?
-        log_debug "creating new render obj"
-        body.render_obj = Rectangle.new(
-          x: followed_opts[:left], y: followed_opts[:top],
-          width: followed_opts[:width], height: followed_opts[:height],
-          color: followed_opts[:color]
-        )
-      else
-        body.render_obj.x = followed_opts[:left]
-        body.render_obj.y = followed_opts[:top]
-        body.render_obj.width = followed_opts[:width]
-        body.render_obj.height = followed_opts[:height]
-        body.render_obj.color = followed_opts[:color]
-      end
-    end
-  end
 
   update_bodies = lambda do
     log "B: #{controller.bodies.size}\tQ: #{low_priority_messages.size()}\tS: #{low_priority_messages.amount_to_skip()}"
@@ -395,7 +403,7 @@ begin
     updated_uuids.each do |uuid|
       body = controller.bodies.get(uuid)
       if body
-        update_body.call(controller, body)
+        renderer.update_body(body)
       end
     end
 
