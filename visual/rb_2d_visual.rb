@@ -156,7 +156,7 @@ class Controller
     return { body_uuid: body.body_uuid }
   end
 
-  def tick *_
+  def tick opts
     prev_clicks = self.clicks.dup
     self.clicks.clear
     prev_keypresses = self.keypresses.dup
@@ -166,7 +166,8 @@ class Controller
     x, y = self.viewport_follower.unfollow x: x, y: y, controller: self
     return { mouse_pos: { x: x, y: y },
              clicks: prev_clicks,
-             keypresses: prev_keypresses }
+             keypresses: prev_keypresses,
+             tick_uuid: opts['tick_uuid'] }
   end
 
   private
@@ -196,36 +197,44 @@ high_priority_messages = Thread::Queue.new
 low_priority_messages = Thread::Queue.new
 replies = Thread::Queue.new
 
+puts "removing socket"
+File.unlink SOCKET_PATH rescue false
+puts "listening"
+serv = UNIXServer.open(SOCKET_PATH)
+socket = serv.accept
+
+puts "starting socker reader thread"
 Thread.new do
-  loop do
-    begin
-      puts "removing socket"
-      File.unlink SOCKET_PATH rescue false
-      puts "listening"
-      UNIXServer.open(SOCKET_PATH) do |serv|
-        s = serv.accept
-        loop do
-          wire_data = s.gets
-          data = JSON.load(wire_data)
-          log_debug "thread got data: #{data}"
-          (data['messages'] || [data]).each do |message_data|
-            log_debug "thread enqueuing message data: #{message_data}"
-            if ['set_position','set_rotation'].include?(message_data['message'])
-              low_priority_messages << message_data
-            else
-              high_priority_messages << message_data
-            end
-          end
-          log_debug "thread waiting for reploy"
-          reply = replies.pop
-          log_debug "thread got reply: #{reply}"
-          s.puts JSON.dump(reply)
-        end
+  begin
+    loop do
+      log_debug "thread reading from wire"
+      wire_data = socket.gets
+      message_data = JSON.load(wire_data)
+      log_debug "thread got data: #{message_data}"
+      if ['set_position','set_rotation'].include?(message_data['message'])
+        low_priority_messages << message_data
+      else
+        high_priority_messages << message_data
       end
-    rescue => ex
-      puts "TEX: #{ex}"
-      puts " : #{ex.backtrace}"
     end
+  rescue => ex
+    puts "TR EX: #{ex}"
+    puts " : #{ex.backtrace}"
+  end
+end
+
+puts "starting socker responder thread"
+Thread.new do
+  begin
+    loop do
+      log_debug "checking for replies"
+      reply = replies.pop()
+      log_debug "thread got reply: #{reply}"
+      socket.puts JSON.dump(reply)
+    end
+  rescue => ex
+    puts "TS EX: #{ex}"
+    puts " : #{ex.backtrace}"
   end
 end
 
@@ -266,13 +275,12 @@ begin
   update_bodies = lambda do
     skip_amt = low_priority_messages.size() / 1000
     log "B: #{controller.bodies.size}\tQ: #{low_priority_messages.size()}\tS: #{skip_amt}"
-    reply = []
     updated_uuids = []
     log_debug "about to processes high priorty messages from thread"
     begin
       while message = high_priority_messages.pop(true)
         log_debug "processing high priority message: #{message}"
-        reply << controller.send(message['message'], message)
+        replies << controller.send(message['message'], message)
         updated_uuids << message['body_uuid']
       end
     rescue ThreadError
@@ -297,14 +305,6 @@ begin
     # queue is empty
     rescue ThreadError
       log_debug "done processing low priority queued messages"
-    else
-      # queue_size = low_priority_messages.size()
-      # if queue_size > 1000
-      #   log "queue length too high (#{low_priority_messages.size()}) - removing some queued items"
-      #   (queue_size/2).times { low_priority_messages.pop(true) } rescue ThreadError
-      # else
-      #   log_debug "queue length: #{low_priority_messages.size()}"
-      # end
     end
 
     log_debug "updating bodies: #{updated_uuids.size}"
@@ -324,9 +324,6 @@ begin
       ensure
         true
       end
-    end
-    if !reply.empty?
-      replies << reply
     end
   end
 

@@ -201,7 +201,7 @@ function Commander(sim) {
       }
     );
     this.sim.tick(opts);
-    return { collisions: collisions };
+    return { collisions: collisions, tick_uuid: opts.tick_uuid };
   };
 
   this.destroy = function(opts) {

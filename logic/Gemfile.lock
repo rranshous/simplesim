@@ -1,0 +1,13 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    rapidjson (0.2.2)
+
+PLATFORMS
+  x86_64-linux
+
+DEPENDENCIES
+  rapidjson
+
+BUNDLED WITH
+   2.2.33

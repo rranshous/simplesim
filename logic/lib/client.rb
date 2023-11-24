@@ -1,5 +1,15 @@
 require 'socket'
 require 'json'
+require 'securerandom'
+
+begin
+  require 'rapidjson'
+  JSON = RapidJSON
+  STDERR.puts "Using rapid encoder"
+rescue LoadError => ex
+  STDERR.puts "Ex: #{ex}"
+  STDERR.puts "No rapid encoder"
+end
 
 class Client
 
@@ -164,7 +174,33 @@ class BatcherClient < Client
   end
 end
 
-class VisClient < BatcherClient
+# Concern: Only wait for ticks in response
+class TickingClient < Client
+  def send_data to_send
+    socket.write(JSON.dump(to_send))
+    socket.write("\n")
+    if to_send[:message] == 'tick'
+      while resp = socket.gets()
+        resp_data = JSON.parse(resp)
+        if resp_data['tick_uuid'] == @tick_uuid
+          return resp_data
+        end
+      end
+    end
+  end
+
+  def tick step_ms=1000/30
+    to_send = {
+      message: 'tick',
+      step_ms: step_ms,
+      tick_uuid: SecureRandom.uuid
+    }
+    @tick_uuid = to_send['tick_uuid']
+    self.tick_response = send_data to_send
+  end
+end
+
+class VisClient < TickingClient
 
   def set_viewport zoom_level: 1, viewport_leader_uuid: nil
     to_send = {
