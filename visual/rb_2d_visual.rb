@@ -264,7 +264,8 @@ begin
   end
 
   update_bodies = lambda do
-    log "body count: #{controller.bodies.size}"
+    skip_amt = low_priority_messages.size() / 1000
+    log "B: #{controller.bodies.size}\tQ: #{low_priority_messages.size()}\tS: #{skip_amt}"
     reply = []
     updated_uuids = []
     log_debug "about to processes high priorty messages from thread"
@@ -291,18 +292,19 @@ begin
           controller.send(message['message'], message)
           updated_uuids << message['body_uuid']
         end
+        skip_amt.times { low_priority_messages.pop(true) }
       end
     # queue is empty
     rescue ThreadError
       log_debug "done processing low priority queued messages"
     else
-      queue_size = low_priority_messages.size()
-      if queue_size > 1000
-        log "queue length too high (#{low_priority_messages.size()}) - removing some queued items"
-        (queue_size/2).times { low_priority_messages.pop(true) } rescue ThreadError
-      else
-        log_debug "queue length: #{low_priority_messages.size()}"
-      end
+      # queue_size = low_priority_messages.size()
+      # if queue_size > 1000
+      #   log "queue length too high (#{low_priority_messages.size()}) - removing some queued items"
+      #   (queue_size/2).times { low_priority_messages.pop(true) } rescue ThreadError
+      # else
+      #   log_debug "queue length: #{low_priority_messages.size()}"
+      # end
     end
 
     log_debug "updating bodies: #{updated_uuids.size}"
