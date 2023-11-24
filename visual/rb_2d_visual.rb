@@ -189,6 +189,89 @@ class Controller
   end
 end
 
+class SocketReader
+  def initialize socket
+    @socket = socket
+  end
+
+  def each &blk
+    loop do
+      log_debug "reading from wire"
+      wire_data = @socket.gets
+      data = JSON.load(wire_data)
+      log_debug "read #{data}"
+      blk.call(data)
+    end
+  end
+end
+
+class SocketWriter
+  def initialize socket
+    @socket = socket
+  end
+
+  def write data
+    @socket.puts JSON.dump(data)
+  end
+end
+
+class MessageReader
+  def initialize socket_reader, high_priority_messages, low_priority_messages
+    @high_priority_messages = high_priority_messages
+    @low_priority_messages = low_priority_messages
+    @socket_reader = socket_reader
+  end
+
+  def start
+    @thread = Thread.new do
+      begin
+        handle_messages
+      rescue => ex
+        puts "TR EX: #{ex}"
+        puts " : #{ex.backtrace}"
+      end
+    end    
+  end
+
+  def handle_messages
+    @socket_reader.each do |message_data|
+      if is_low_priority?(message_data)
+        @low_priority_messages << message_data
+      else
+        @high_priority_messages << message_data
+      end
+    end
+  end
+
+  def is_low_priority? message_data
+    ['set_position','set_rotation'].include?(message_data['message'])
+  end
+end
+
+class MessageWriter
+  def initialize socket_writer, outbound_queue
+    @socket_writer = socket_writer
+    @outbound_queue = outbound_queue
+  end
+
+  def start
+    @thread = Thread.new do
+      begin
+        loop do
+          log_debug "checking for replies"
+          data = @outbound_queue.pop()
+          log_debug "sending reply: #{data}"
+          @socket_writer.write(data)
+        end
+      rescue => ex
+        puts "TS EX: #{ex}"
+        puts " : #{ex.backtrace}"
+      end
+    end
+  end
+end
+
+
 controller = Controller.new
 controller.window_width = WINDOW_WIDTH
 controller.window_height = WINDOW_HEIGHT
@@ -203,40 +286,18 @@ puts "listening"
 serv = UNIXServer.open(SOCKET_PATH)
 socket = serv.accept
 
-puts "starting socker reader thread"
-Thread.new do
-  begin
-    loop do
-      log_debug "thread reading from wire"
-      wire_data = socket.gets
-      message_data = JSON.load(wire_data)
-      log_debug "thread got data: #{message_data}"
-      if ['set_position','set_rotation'].include?(message_data['message'])
-        low_priority_messages << message_data
-      else
-        high_priority_messages << message_data
-      end
-    end
-  rescue => ex
-    puts "TR EX: #{ex}"
-    puts " : #{ex.backtrace}"
-  end
-end
+puts "starting message reader thread"
+message_reader = MessageReader.new(SocketReader.new(socket),
+                                   high_priority_messages, low_priority_messages)
+message_reader.start
 
 puts "starting socker responder thread"
-Thread.new do
-  begin
-    loop do
-      log_debug "checking for replies"
-      reply = replies.pop()
-      log_debug "thread got reply: #{reply}"
-      socket.puts JSON.dump(reply)
-    end
-  rescue => ex
-    puts "TS EX: #{ex}"
-    puts " : #{ex.backtrace}"
-  end
-end
+message_writer = MessageWriter.new(SocketWriter.new(socket),
+                                   replies)
+message_writer.start
+
+
+
 
 set title: 'ruby2d visual', background: 'white',
     width: controller.window_width,
