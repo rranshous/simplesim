@@ -269,7 +269,7 @@ attacker_shot_handler.body_remover = body_remover
 attacker_shot_handler.collisions = attacker_collisions
 
 game.run do |tick|
-  if tick % 2 == 0
+  if tick % 1 == 0
     enemy_spawner.spawn_attacker
   end
   if tick % 20 == 0

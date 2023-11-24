@@ -236,9 +236,9 @@ class MessageReader
   def handle_messages
     @socket_reader.each do |message_data|
       if is_low_priority?(message_data)
-        @low_priority_messages << message_data
+        @low_priority_messages.push(message_data)
       else
-        @high_priority_messages << message_data
+        @high_priority_messages.push(message_data)
       end
     end
   end
@@ -271,13 +271,38 @@ class MessageWriter
   end
 end
 
+class BackpressureQueue
+
+  def initialize target_length
+    @queue = Thread::Queue.new
+    @target_length = target_length
+  end
+
+  def size
+    @queue.size
+  end
+
+  def pop
+    amount_to_skip.times { @queue.pop() }
+    @queue.pop()
+  end
+
+  def push data
+    @queue.push(data)
+  end
+
+  def amount_to_skip
+    @queue.size() / @target_length
+  end
+end
+
 
 controller = Controller.new
 controller.window_width = WINDOW_WIDTH
 controller.window_height = WINDOW_HEIGHT
 
 high_priority_messages = Thread::Queue.new
-low_priority_messages = Thread::Queue.new
+low_priority_messages = BackpressureQueue.new(1000)
 replies = Thread::Queue.new
 
 puts "removing socket"
@@ -324,18 +349,17 @@ begin
           color: followed_opts[:color]
         )
       else
-        body.render_obj.x = followed_opts[:left] if body.render_obj.x != followed_opts[:left]
-        body.render_obj.y = followed_opts[:top] if body.render_obj.y != followed_opts[:top]
-        body.render_obj.width = followed_opts[:width] if body.render_obj.width != followed_opts[:width]
-        body.render_obj.height = followed_opts[:height] if body.render_obj.height != followed_opts[:height]
-        body.render_obj.color = followed_opts[:color] if body.render_obj.color != followed_opts[:color]
+        body.render_obj.x = followed_opts[:left]
+        body.render_obj.y = followed_opts[:top]
+        body.render_obj.width = followed_opts[:width]
+        body.render_obj.height = followed_opts[:height]
+        body.render_obj.color = followed_opts[:color]
       end
     end
   end
 
   update_bodies = lambda do
-    skip_amt = low_priority_messages.size() / 1000
-    log "B: #{controller.bodies.size}\tQ: #{low_priority_messages.size()}\tS: #{skip_amt}"
+    log "B: #{controller.bodies.size}\tQ: #{low_priority_messages.size()}\tS: #{low_priority_messages.amount_to_skip()}"
     updated_uuids = []
     log_debug "about to processes high priorty messages from thread"
     begin
@@ -351,7 +375,7 @@ begin
     log_debug "about to processes low priorty messages from thread"
     begin
       100.times do
-        message = low_priority_messages.pop(true)
+        message = low_priority_messages.pop()
         body = controller.bodies.get(message['body_uuid'])
         log_debug "processing low message: #{message}"
         # it's possible a low priority message is out of order and the relevant
@@ -361,7 +385,6 @@ begin
           controller.send(message['message'], message)
           updated_uuids << message['body_uuid']
         end
-        skip_amt.times { low_priority_messages.pop(true) }
       end
     # queue is empty
     rescue ThreadError
