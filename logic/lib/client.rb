@@ -188,16 +188,6 @@ class TickingClient < Client
       end
     end
   end
-
-  def tick step_ms=1000/30
-    to_send = {
-      message: 'tick',
-      step_ms: step_ms,
-      tick_uuid: SecureRandom.uuid
-    }
-    @tick_uuid = to_send['tick_uuid']
-    self.tick_response = send_data to_send
-  end
 end
 
 class VisClient < TickingClient
