@@ -89,8 +89,8 @@ class Attacker < Body
 
   def init_attrs
     self.color = 'yellow'
-    self.width = 10
-    self.height = 10
+    self.width = 5
+    self.height = 5
     self.max_speed = 10
     self.acceleration = 3
   end
@@ -102,10 +102,18 @@ end
 class AttackerSpawner
   attr_accessor :board, :spawn_from, :attacker_class, :collection
 
+  def initialize
+    @counter = 1
+  end
+
   def spawn_attacker
     attacker = attacker_class.new
     attacker.location = random_nearby
+    color = [
+      '#9400d3', '#4B0082'][(@counter / 1000) % 2]
+    attacker.color = color
     board.add_body body: attacker, type: :enemy_attacker
+    @counter += 1
   end
 
   private
